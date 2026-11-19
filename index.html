@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>time.sarimoko.com — Advanced Metronome, Polyrhythm & Dr. Drum Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            obsidian: '#090a0f',
+            studio: '#11131a',
+            panel: '#171a24',
+            panelBorder: '#252938',
+            cyanGlow: '#00f0ff',
+            amberGlow: '#ff9e00',
+            magentaGlow: '#ff2a85',
+            emeraldGlow: '#00e676',
+            violetGlow: '#a855f7',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+    :root {
+      --bg-obsidian: #090a0f;
+      --bg-panel: #171a24;
+      --border-subtle: #252938;
+    }
+
+    body {
+      background-color: var(--bg-obsidian);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* Custom Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #252938;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #00f0ff;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+      transition: transform 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* Hardware Button Depression */
+    .hw-btn {
+      transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .hw-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    /* Glow Utilities */
+    .glow-cyan { box-shadow: 0 0 18px rgba(0, 240, 255, 0.35); }
+    .glow-amber { box-shadow: 0 0 18px rgba(255, 158, 0, 0.35); }
+    .glow-magenta { box-shadow: 0 0 18px rgba(255, 42, 133, 0.35); }
+    .glow-emerald { box-shadow: 0 0 18px rgba(0, 230, 118, 0.35); }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0d0f16; }
+    ::-webkit-scrollbar-thumb { background: #2a2f42; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b425c; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-obsidian text-slate-200 selection:bg-cyan-500/30">
+
+  <!-- TOP STUDIO TRANSPORT BAR -->
+  <header class="sticky top-0 z-40 bg-studio/95 backdrop-blur-md border-b border-panelBorder px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand / Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400/20 to-fuchsia-500/20 border border-cyan-400/40 flex items-center justify-center relative overflow-hidden">
+          <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9" stroke-opacity="0.4"/>
+            <polygon points="12,3 20,17 4,17" stroke="#00f0ff" stroke-width="1.75" fill="none"/>
+            <circle cx="12" cy="3" r="2" fill="#ff9e00" stroke="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-mono font-bold tracking-tight text-white text-base sm:text-lg">time<span class="text-cyan-400">.sarimoko</span>.com</span>
+            <span class="hidden sm:inline-block text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">Audio Clock v3.2</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Sample-Accurate Time Signature, Polyrhythm & Groove Workstation</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Tabs -->
+      <nav class="flex items-center bg-obsidian p-1 rounded-xl border border-panelBorder order-3 lg:order-2 w-full lg:w-auto justify-center overflow-x-auto">
+        <button id="tabBtnMetronome" onclick="switchTab('metronome')" class="flex-1 lg:flex-initial px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-panel text-cyan-300 border border-cyan-500/30 shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L6 20h12L12 2z"/><path d="M12 14l4-7"/></svg>
+          <span>Metronome</span>
+        </button>
+        <button id="tabBtnPolyrhythm" onclick="switchTab('polyrhythm')" class="flex-1 lg:flex-initial px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><line x1="12" y1="3" x2="12" y2="12"/></svg>
+          <span>Polyrhythm Lab</span>
+        </button>
+        <button id="tabBtnDrDrum" onclick="switchTab('drdrum')" class="flex-1 lg:flex-initial px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><line x1="7" y1="15" x2="17" y2="15"/></svg>
+          <span>Dr. Drum</span>
+        </button>
+        <button id="tabBtnSongMap" onclick="switchTab('songmap')" class="flex-1 lg:flex-initial px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/><circle cx="19" cy="12" r="2"/></svg>
+          <span>Song Map</span>
+        </button>
+      </nav>
+
+      <!-- Master Transport Controls -->
+      <div class="flex items-center gap-2 sm:gap-3 order-2 lg:order-3">
+        <!-- Modulation Calculator Trigger -->
+        <button onclick="toggleModulationModal()" class="hw-btn hidden sm:flex px-2.5 py-2 rounded-lg bg-panel hover:bg-slate-800 border border-panelBorder text-xs font-mono font-semibold text-cyan-300 items-center gap-1.5" title="Metric Modulation Calculator">
+          <span>Modulation Calc</span>
+        </button>
+
+        <!-- Tap Tempo -->
+        <button id="btnTapTempo" onclick="handleTapTempo()" class="hw-btn px-3 py-2 rounded-lg bg-panel hover:bg-slate-800 border border-panelBorder text-xs font-mono font-semibold text-amber-300 flex items-center gap-1.5" title="Tap repeatedly to detect BPM">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          TAP
+        </button>
+
+        <!-- Play / Stop Button -->
+        <button id="btnPlayStop" onclick="togglePlay()" class="hw-btn px-4 sm:px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-obsidian font-bold text-xs sm:text-sm flex items-center gap-2 glow-cyan" title="Spacebar to Play/Stop">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+          <span id="lblPlayStop">START</span>
+        </button>
+
+        <!-- Master Volume -->
+        <div class="hidden xl:flex items-center gap-2 bg-panel px-3 py-1.5 rounded-lg border border-panelBorder">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          <input id="masterVolume" type="range" min="0" max="1" step="0.01" value="0.85" class="w-20" oninput="updateMasterVolume(this.value)" title="Master Output Gain" />
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: ADVANCED METRONOME VIEW                                        -->
+    <!-- ===================================================================== -->
+    <section id="viewMetronome" class="space-y-6">
+      
+      <!-- Top Control Grid: BPM, Time Signature, Sound & Subdivision -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- BPM & Tempo Engine Card (5 cols) -->
+        <div class="lg:col-span-5 bg-panel border border-panelBorder rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono uppercase tracking-wider text-slate-400">Master Tempo</span>
+            <span id="tempoMarking" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">Allegro</span>
+          </div>
+
+          <!-- Big Digital BPM Display & Stepper -->
+          <div class="flex items-center justify-between my-3 gap-2">
+            <div class="flex items-center gap-1.5">
+              <button onclick="adjustBpm(-5)" class="hw-btn w-9 h-10 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder font-mono text-xs text-slate-300">-5</button>
+              <button onclick="adjustBpm(-1)" class="hw-btn w-10 h-12 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder font-mono text-lg font-bold text-white">-</button>
+            </div>
+
+            <div class="flex flex-col items-center">
+              <input id="bpmInput" type="number" min="20" max="300" value="120" onchange="setBpm(this.value)" class="w-32 text-center bg-transparent font-mono text-5xl sm:text-6xl font-bold text-white focus:outline-none focus:text-cyan-300" />
+              <span class="text-[11px] font-mono uppercase tracking-widest text-slate-500 mt-1">Beats Per Minute</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <button onclick="adjustBpm(1)" class="hw-btn w-10 h-12 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder font-mono text-lg font-bold text-white">+</button>
+              <button onclick="adjustBpm(5)" class="hw-btn w-9 h-10 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder font-mono text-xs text-slate-300">+5</button>
+            </div>
+          </div>
+
+          <!-- Slider -->
+          <div class="mt-2">
+            <input id="bpmSlider" type="range" min="20" max="300" value="120" oninput="setBpm(this.value)" class="w-full" />
+            <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+              <span>20</span>
+              <span>80</span>
+              <span>120</span>
+              <span>180</span>
+              <span>240</span>
+              <span>300</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Time Signature & Subdivisions Card (4 cols) -->
+        <div class="lg:col-span-4 bg-panel border border-panelBorder rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono uppercase tracking-wider text-slate-400">Time Signature</span>
+              <!-- Quick Common Signatures -->
+              <div class="flex items-center gap-1">
+                <button onclick="setTimeSignature(4,4)" class="px-2 py-0.5 text-[11px] font-mono rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-slate-300">4/4</button>
+                <button onclick="setTimeSignature(3,4)" class="px-2 py-0.5 text-[11px] font-mono rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-slate-300">3/4</button>
+                <button onclick="setTimeSignature(5,4)" class="px-2 py-0.5 text-[11px] font-mono rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-slate-300">5/4</button>
+                <button onclick="setTimeSignature(7,8)" class="px-2 py-0.5 text-[11px] font-mono rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-slate-300">7/8</button>
+                <button onclick="toggleModulationModal()" class="px-2 py-0.5 text-[11px] font-mono rounded bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300" title="Open Metric Modulation Calculator">Mod</button>
+              </div>
+            </div>
+
+            <!-- Numerator / Denominator Selectors -->
+            <div class="flex items-center justify-center gap-4 bg-obsidian/70 rounded-xl p-3 border border-panelBorder">
+              <div class="flex flex-col items-center">
+                <span class="text-[10px] font-mono text-slate-500 mb-1">BEATS</span>
+                <div class="flex items-center gap-2">
+                  <button onclick="changeNumerator(-1)" class="w-7 h-7 rounded bg-panel hover:bg-slate-700 text-white font-mono font-bold">-</button>
+                  <span id="displayNumerator" class="font-mono text-3xl font-bold text-cyan-300 w-10 text-center">4</span>
+                  <button onclick="changeNumerator(1)" class="w-7 h-7 rounded bg-panel hover:bg-slate-700 text-white font-mono font-bold">+</button>
+                </div>
+              </div>
+
+              <span class="text-3xl font-mono text-slate-600 font-light">/</span>
+
+              <div class="flex flex-col items-center">
+                <span class="text-[10px] font-mono text-slate-500 mb-1">NOTE VAL</span>
+                <select id="selectDenominator" onchange="setDenominator(parseInt(this.value))" class="bg-panel border border-panelBorder rounded-lg px-3 py-1.5 font-mono text-2xl font-bold text-amber-300 focus:outline-none">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="4" selected>4</option>
+                  <option value="8">8</option>
+                  <option value="16">16</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Odd-Meter Pulse Groupings -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Odd-Meter Pulse Groupings</span>
+                <span id="activeGroupingLabel" class="text-[10px] font-mono text-emerald-300">Standard</span>
+              </div>
+              <div class="flex flex-wrap gap-1">
+                <button onclick="applyPulseGrouping(5, 8, [3, 2], '5/8 (3+2)')" class="hw-btn px-1.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-[10px] font-mono text-cyan-300">5/8 (3+2)</button>
+                <button onclick="applyPulseGrouping(5, 8, [2, 3], '5/8 (2+3)')" class="hw-btn px-1.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-[10px] font-mono text-cyan-300">5/8 (2+3)</button>
+                <button onclick="applyPulseGrouping(7, 8, [2, 2, 3], '7/8 (2+2+3)')" class="hw-btn px-1.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-[10px] font-mono text-amber-300">7/8 (2+2+3)</button>
+                <button onclick="applyPulseGrouping(7, 8, [3, 2, 2], '7/8 (3+2+2)')" class="hw-btn px-1.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-[10px] font-mono text-amber-300">7/8 (3+2+2)</button>
+                <button onclick="applyPulseGrouping(9, 8, [2, 2, 2, 3], '9/8 (2+2+2+3)')" class="hw-btn px-1.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-[10px] font-mono text-pink-300">9/8 (2+2+2+3)</button>
+                <button onclick="applyPulseGrouping(11, 8, [3, 3, 3, 2], '11/8 (3+3+3+2)')" class="hw-btn px-1.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-[10px] font-mono text-emerald-300">11/8 (3+3+3+2)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subdivisions -->
+          <div class="mt-3 pt-3 border-t border-panelBorder/60">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-mono uppercase tracking-wider text-slate-400">Subdivision</span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono text-slate-400">Sub Vol</span>
+                <input id="subVolumeSlider" type="range" min="0" max="1" step="0.05" value="0.45" oninput="metronomeState.subVolume = parseFloat(this.value)" class="w-16" />
+              </div>
+            </div>
+            <div class="grid grid-cols-6 gap-1.5" id="subdivisionButtons">
+              <button data-sub="1" onclick="setSubdivision(1)" class="sub-btn py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-mono text-xs font-bold" title="Quarter / Main Pulse">1x</button>
+              <button data-sub="2" onclick="setSubdivision(2)" class="sub-btn py-1.5 rounded-lg bg-obsidian border border-panelBorder text-slate-400 hover:text-white font-mono text-xs" title="Eighths">2x</button>
+              <button data-sub="3" onclick="setSubdivision(3)" class="sub-btn py-1.5 rounded-lg bg-obsidian border border-panelBorder text-slate-400 hover:text-white font-mono text-xs" title="Triplets">3x</button>
+              <button data-sub="4" onclick="setSubdivision(4)" class="sub-btn py-1.5 rounded-lg bg-obsidian border border-panelBorder text-slate-400 hover:text-white font-mono text-xs" title="Sixteenths">4x</button>
+              <button data-sub="5" onclick="setSubdivision(5)" class="sub-btn py-1.5 rounded-lg bg-obsidian border border-panelBorder text-slate-400 hover:text-white font-mono text-xs" title="Quintuplets">5x</button>
+              <button data-sub="7" onclick="setSubdivision(7)" class="sub-btn py-1.5 rounded-lg bg-obsidian border border-panelBorder text-slate-400 hover:text-white font-mono text-xs" title="Septuplets">7x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sound Engine & Practice Trainer Card (3 cols) -->
+        <div class="lg:col-span-3 bg-panel border border-panelBorder rounded-2xl p-5 flex flex-col justify-between space-y-4">
+          <!-- Sound Preset -->
+          <div>
+            <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Click Sound Engine</label>
+            <select id="soundPresetSelect" onchange="metronomeState.soundPreset = this.value" class="w-full bg-obsidian border border-panelBorder rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-400">
+              <option value="woodblock">Acoustic Woodblock</option>
+              <option value="digital">Precision Digital Click</option>
+              <option value="analog">Analog Synth Beep</option>
+              <option value="percussion">Studio Rim & Kick</option>
+            </select>
+          </div>
+
+          <!-- Practice Telemetry -->
+          <div class="grid grid-cols-2 gap-2 bg-obsidian/70 p-2.5 rounded-xl border border-panelBorder">
+            <div>
+              <div class="text-[10px] font-mono text-slate-500 uppercase">Bar Count</div>
+              <div id="barCounterDisplay" class="font-mono text-lg font-bold text-white">1</div>
+            </div>
+            <div>
+              <div class="text-[10px] font-mono text-slate-500 uppercase">Elapsed</div>
+              <div id="timerDisplay" class="font-mono text-lg font-bold text-slate-300">00:00</div>
+            </div>
+          </div>
+
+          <!-- Speed Trainer -->
+          <div class="border-t border-panelBorder pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono font-semibold text-amber-300 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                Tempo Ramp Trainer
+              </span>
+              <input id="trainerEnabled" type="checkbox" onchange="metronomeState.trainer.enabled = this.checked" class="w-4 h-4 accent-amber-400 rounded cursor-pointer" />
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
+              <span>+</span>
+              <input id="trainerBpmStep" type="number" min="1" max="30" value="5" onchange="metronomeState.trainer.bpmStep = parseInt(this.value)||1" class="w-11 bg-obsidian border border-panelBorder rounded px-1.5 py-1 text-center text-white" />
+              <span>BPM every</span>
+              <input id="trainerBarStep" type="number" min="1" max="64" value="4" onchange="metronomeState.trainer.barStep = parseInt(this.value)||1" class="w-11 bg-obsidian border border-panelBorder rounded px-1.5 py-1 text-center text-white" />
+              <span>bars</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Beat Accent Sequencer Stage -->
+      <div class="bg-panel border border-panelBorder rounded-2xl p-5 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div>
+            <h2 class="text-sm font-mono uppercase tracking-wider text-white font-semibold">Interactive Beat Accent Matrix</h2>
+            <p class="text-xs text-slate-400">Click any beat column to cycle dynamic intensity: <span class="text-amber-300 font-semibold">Accent</span> &rarr; <span class="text-cyan-300 font-semibold">Normal</span> &rarr; <span class="text-slate-400 font-semibold">Ghost</span> &rarr; <span class="text-rose-400 font-semibold">Mute</span></p>
+          </div>
+          <!-- Subdivision Pulse Bar -->
+          <div class="flex items-center gap-2 bg-obsidian px-3 py-1.5 rounded-lg border border-panelBorder">
+            <span class="text-[10px] font-mono uppercase text-slate-500">Sub-Pulse:</span>
+            <div id="subPulseDots" class="flex items-center gap-1.5"></div>
+          </div>
+        </div>
+
+        <!-- Beat Pads Grid -->
+        <div id="beatSequencerGrid" class="grid grid-cols-4 sm:grid-cols-8 gap-3">
+          <!-- Dynamically populated beat pads -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: POLYRHYTHM & POLYMETER VISUAL LAB                              -->
+    <!-- ===================================================================== -->
+    <section id="viewPolyrhythm" class="hidden space-y-6">
+      
+      <!-- Top Polyrhythm Control & Preset Bar -->
+      <div class="bg-panel border border-panelBorder rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Mode Toggle: Polyrhythm (Sync Cycle) vs Polymeter (Sync Pulse) -->
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="bg-obsidian p-1 rounded-xl border border-panelBorder flex items-center">
+            <button id="btnModePolyrhythm" onclick="setPolyMode('polyrhythm')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-magentaGlow/20 text-pink-300 border border-pink-500/40 transition-all">
+              Polyrhythm (Sync Cycle)
+            </button>
+            <button id="btnModePolymeter" onclick="setPolyMode('polymeter')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-400 hover:text-white transition-all">
+              Polymeter (Sync Pulse)
+            </button>
+          </div>
+
+          <!-- Unified BPM Control inside Polyrhythm Tab (-5 / -1 / Input / +1 / +5) -->
+          <div class="flex items-center gap-1.5 bg-obsidian px-3 py-1.5 rounded-xl border border-panelBorder">
+            <span class="text-[10px] font-mono text-slate-500 mr-1">BPM:</span>
+            <button onclick="adjustBpm(-5)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-[11px] text-slate-300">-5</button>
+            <button onclick="adjustBpm(-1)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-sm font-bold text-white">-</button>
+            <input id="polyBpmInput" type="number" min="20" max="300" value="120" onchange="setBpm(this.value)" class="w-14 bg-transparent text-center font-mono text-base font-bold text-cyan-300 focus:outline-none" />
+            <button onclick="adjustBpm(1)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-sm font-bold text-white">+</button>
+            <button onclick="adjustBpm(5)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-[11px] text-slate-300">+5</button>
+          </div>
+        </div>
+
+        <!-- Instant Presets with Default Reset First -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-[11px] font-mono text-slate-500 mr-1">PRESETS:</span>
+          <button onclick="loadPolyPreset('default')" class="hw-btn px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300" title="Reset to Default 4:3 Setup">&#8634; Default</button>
+          <button onclick="loadPolyPreset('3:2')" class="hw-btn px-2.5 py-1.5 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-cyan-300">3:2 Hemiola</button>
+          <button onclick="loadPolyPreset('4:3')" class="hw-btn px-2.5 py-1.5 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-amber-300">4:3 Classic</button>
+          <button onclick="loadPolyPreset('5:4')" class="hw-btn px-2.5 py-1.5 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-pink-300">5:4 Groove</button>
+          <button onclick="loadPolyPreset('7:4')" class="hw-btn px-2.5 py-1.5 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-emerald-300">7:4 Odd</button>
+          <button onclick="loadPolyPreset('3:4:5')" class="hw-btn px-2.5 py-1.5 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-purple-300">3:4:5 Stack</button>
+        </div>
+
+      </div>
+
+      <!-- Main Split Workspace: Visualizers (Left/Top) & Stacked Rhythm Layers (Right/Bottom) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- VISUALIZATION STAGE (6 Columns) -->
+        <div class="lg:col-span-6 bg-panel border border-panelBorder rounded-2xl p-4 sm:p-5 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">Geometric & Phase Visualizer</h3>
+              <p id="polyModeDescription" class="text-[11px] text-slate-400">All polygons complete 1 full rotation per master cycle.</p>
+            </div>
+            <!-- View Toggle -->
+            <div class="flex bg-obsidian p-1 rounded-lg border border-panelBorder text-[11px] font-mono">
+              <button id="visBtnBoth" onclick="setVisLayout('both')" class="px-2 py-1 rounded bg-slate-800 text-white">Split</button>
+              <button id="visBtnOrbit" onclick="setVisLayout('orbit')" class="px-2 py-1 rounded text-slate-400 hover:text-white">Orbit</button>
+              <button id="visBtnLinear" onclick="setVisLayout('linear')" class="px-2 py-1 rounded text-slate-400 hover:text-white">Grid</button>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="flex-1 flex flex-col gap-4 min-h-[380px]">
+            <!-- Circular Orbit Canvas -->
+            <div id="orbitCanvasWrap" class="relative flex-1 min-h-[260px] bg-obsidian rounded-xl border border-panelBorder overflow-hidden flex items-center justify-center">
+              <canvas id="orbitCanvas" class="w-full h-full block"></canvas>
+              <div class="absolute top-2.5 left-3 text-[10px] font-mono text-slate-500 pointer-events-none">12 O'CLOCK = TRIGGER PHASE</div>
+              <div id="ratioReadout" class="absolute bottom-2.5 right-3 text-xs font-mono font-bold text-cyan-400/80 bg-panel/80 px-2 py-0.5 rounded border border-panelBorder pointer-events-none">4 : 3</div>
+            </div>
+
+            <!-- Linear Timeline Canvas -->
+            <div id="linearCanvasWrap" class="relative h-44 bg-obsidian rounded-xl border border-panelBorder overflow-hidden">
+              <canvas id="linearCanvas" class="w-full h-full block"></canvas>
+              <div class="absolute top-2 left-3 text-[10px] font-mono text-slate-500 pointer-events-none">COINCIDENCE & STEP PHASE GRID</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STACKED RHYTHM LAYERS RACK (6 Columns) -->
+        <div class="lg:col-span-6 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-mono uppercase tracking-wider text-white font-bold">Stacked Rhythm Voices</h3>
+              <p class="text-xs text-slate-400">Layer up to 6 independent time signatures / subdivisions</p>
+            </div>
+            <button id="btnAddLayer" onclick="addPolyLayer()" class="hw-btn px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 font-mono text-xs font-bold flex items-center gap-1.5">
+              <span>+ ADD LAYER</span>
+            </button>
+          </div>
+
+          <!-- Layer Cards Container -->
+          <div id="polyLayersContainer" class="space-y-3 max-h-[540px] overflow-y-auto pr-1">
+            <!-- Dynamically generated layer strips -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: DR. DRUM RHYTHM PARTNER GROOVE ENGINE                          -->
+    <!-- ===================================================================== -->
+    <section id="viewDrDrum" class="hidden space-y-6">
+
+      <!-- Top Console: Groove Presets, Meter, Tempo, Swing, Humanize & Fill Controls -->
+      <div class="bg-panel border border-panelBorder rounded-2xl p-4 sm:p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        
+        <!-- Left: Brand Badge & Groove Style Presets -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono text-[11px] font-bold tracking-wider">DR. DRUM</span>
+            <span class="text-xs font-mono text-slate-400">Acoustic & Electronic Rhythm Partner</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[11px] font-mono text-slate-500 mr-1">STYLE:</span>
+            <button onclick="loadDrDrumPreset('default')" class="hw-btn px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300" title="Reset Dr. Drum to Default 4/4 Studio Kit">&#8634; Default</button>
+            <button onclick="loadDrDrumPreset('unplugged')" class="hw-btn px-2.5 py-1 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-amber-300">Unplugged Jam</button>
+            <button onclick="loadDrDrumPreset('popRock')" class="hw-btn px-2.5 py-1 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-cyan-300">Pop / Rock</button>
+            <button onclick="loadDrDrumPreset('funk')" class="hw-btn px-2.5 py-1 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-pink-300">16th Funk</button>
+            <button onclick="loadDrDrumPreset('bossa')" class="hw-btn px-2.5 py-1 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-emerald-300">Latin / Bossa</button>
+            <button onclick="loadDrDrumPreset('halfTime')" class="hw-btn px-2.5 py-1 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-purple-300">Half-Time Shuffle</button>
+          </div>
+        </div>
+
+        <!-- Center: Meter, Unified BPM, Swing & Humanize -->
+        <div class="flex flex-wrap items-center gap-3 bg-obsidian/80 p-3 rounded-xl border border-panelBorder">
+          <!-- Time Signature Selector -->
+          <div class="flex items-center gap-1.5 pr-3 border-r border-panelBorder">
+            <span class="text-[10px] font-mono text-slate-500">METER:</span>
+            <select id="drDrumMeterSelect" onchange="setDrDrumMeter(this.value)" class="bg-panel border border-panelBorder rounded-lg px-2 py-1 text-xs font-mono font-bold text-amber-300 focus:outline-none">
+              <option value="4/4" selected>4/4 (16-Step)</option>
+              <option value="3/4">3/4 (12-Step)</option>
+              <option value="5/4">5/4 (20-Step)</option>
+              <option value="6/8">6/8 (12-Step)</option>
+              <option value="7/8">7/8 (14-Step)</option>
+            </select>
+          </div>
+
+          <!-- Unified BPM (-5 / -1 / Input / +1 / +5) -->
+          <div class="flex items-center gap-1 pr-3 border-r border-panelBorder">
+            <span class="text-[10px] font-mono text-slate-500 mr-0.5">BPM:</span>
+            <button onclick="adjustBpm(-5)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-[11px] text-slate-300">-5</button>
+            <button onclick="adjustBpm(-1)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-sm font-bold text-white">-</button>
+            <input id="drDrumBpmInput" type="number" min="20" max="300" value="120" onchange="setBpm(this.value)" class="w-12 bg-transparent text-center font-mono text-sm font-bold text-cyan-300 focus:outline-none" />
+            <button onclick="adjustBpm(1)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-sm font-bold text-white">+</button>
+            <button onclick="adjustBpm(5)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-[11px] text-slate-300">+5</button>
+          </div>
+
+          <!-- Swing -->
+          <div class="flex items-center gap-2 pr-3 border-r border-panelBorder">
+            <span class="text-[10px] font-mono text-slate-400">SWING:</span>
+            <input id="drDrumSwingSlider" type="range" min="0" max="0.45" step="0.01" value="0" oninput="drDrumState.swing = parseFloat(this.value); document.getElementById('drDrumSwingVal').textContent = Math.round((this.value/0.45)*100) + '%'" class="w-16" />
+            <span id="drDrumSwingVal" class="text-[11px] font-mono text-amber-300 w-8">0%</span>
+          </div>
+
+          <!-- Humanize -->
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono text-slate-400">FEEL:</span>
+            <input id="drDrumHumanizeSlider" type="range" min="0" max="1" step="0.05" value="0.25" oninput="drDrumState.humanize = parseFloat(this.value)" class="w-14" title="Micro-timing & velocity humanization" />
+          </div>
+        </div>
+
+        <!-- Right: Live Fill Controls -->
+        <div class="flex items-center gap-2">
+          <button id="btnDrDrumFill" onclick="triggerDrDrumFill()" class="hw-btn px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/60 text-amber-300 font-mono text-xs font-bold flex items-center gap-2">
+            <span id="fillIndicatorDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span>FILL NOW</span>
+          </button>
+
+          <label class="flex items-center gap-1.5 bg-obsidian px-3 py-2.5 rounded-xl border border-panelBorder cursor-pointer text-[11px] font-mono text-slate-300">
+            <input id="drDrumAutoFill" type="checkbox" onchange="drDrumState.autoFill = this.checked" class="accent-amber-400 rounded" />
+            <span>Auto-Fill (4 Bar)</span>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Pattern Matrix & Mixer Rack -->
+      <div class="bg-panel border border-panelBorder rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">Instrument Mixer & Pattern Variants</span>
+            <span id="drDrumBarBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-obsidian border border-panelBorder text-cyan-300">BAR 1 / 4 • 4/4</span>
+          </div>
+          <span class="text-[11px] font-mono text-slate-400 hidden sm:inline">Click any step cell to customize pattern &bull; F = Fill Trigger</span>
+        </div>
+
+        <!-- Channel Strips Container -->
+        <div id="drDrumChannelsContainer" class="space-y-3">
+          <!-- Dynamically populated Dr. Drum instrument rows -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 4: SONG MAP ARRANGEMENT TAB                                       -->
+    <!-- ===================================================================== -->
+    <section id="viewSongMap" class="hidden space-y-6">
+
+      <!-- Top Console: Unified BPM, Playback Telemetry, Loop & JSON Import/Export -->
+      <div class="bg-panel border border-panelBorder rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        
+        <div class="flex flex-wrap items-center gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-mono text-[11px] font-bold tracking-wider">SONG MAP</span>
+              <span class="text-xs font-mono text-slate-400">Section & Tempo Chart Sequencer</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Automatically shifts time signatures and BPM bar-by-bar during playback.</p>
+          </div>
+
+          <!-- Unified BPM (-5 / -1 / Input / +1 / +5) -->
+          <div class="flex items-center gap-1.5 bg-obsidian px-3 py-1.5 rounded-xl border border-panelBorder">
+            <span class="text-[10px] font-mono text-slate-500 mr-1">BPM:</span>
+            <button onclick="adjustBpm(-5)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-[11px] text-slate-300">-5</button>
+            <button onclick="adjustBpm(-1)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-sm font-bold text-white">-</button>
+            <input id="songMapBpmInput" type="number" min="20" max="300" value="120" onchange="setBpm(this.value)" class="w-14 bg-transparent text-center font-mono text-base font-bold text-cyan-300 focus:outline-none" />
+            <button onclick="adjustBpm(1)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-sm font-bold text-white">+</button>
+            <button onclick="adjustBpm(5)" class="hw-btn w-7 h-7 rounded bg-panel hover:bg-slate-800 border border-panelBorder font-mono text-[11px] text-slate-300">+5</button>
+          </div>
+        </div>
+
+        <!-- Live Section Status & Chart Actions -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="bg-obsidian px-3 py-1.5 rounded-xl border border-panelBorder flex items-center gap-3 mr-1">
+            <div>
+              <div class="text-[9px] font-mono text-slate-500 uppercase">Active Section</div>
+              <div id="songMapActiveBadge" class="text-xs font-mono font-bold text-emerald-300">Intro (4/4)</div>
+            </div>
+            <div class="h-6 w-px bg-panelBorder"></div>
+            <div>
+              <div class="text-[9px] font-mono text-slate-500 uppercase">Bar</div>
+              <div id="songMapBarBadge" class="text-xs font-mono font-bold text-white">1 / 4</div>
+            </div>
+          </div>
+
+          <label class="flex items-center gap-1.5 bg-obsidian px-3 py-2 rounded-xl border border-panelBorder cursor-pointer text-xs font-mono text-slate-300">
+            <input id="songMapLoopCheckbox" type="checkbox" checked onchange="songMapState.loop = this.checked" class="accent-emerald-400 rounded" />
+            <span>Loop</span>
+          </label>
+
+          <button onclick="addSongMapSection()" class="hw-btn px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-xs font-mono font-bold text-cyan-300">
+            + Add Section
+          </button>
+
+          <button onclick="exportSongMapJson()" class="hw-btn px-2.5 py-2 rounded-xl bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-slate-300" title="Export chart to JSON">
+            Export JSON
+          </button>
+
+          <button onclick="document.getElementById('songMapImportInput').click()" class="hw-btn px-2.5 py-2 rounded-xl bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-slate-300" title="Import chart from JSON">
+            Import JSON
+          </button>
+          <input id="songMapImportInput" type="file" accept=".json" class="hidden" onchange="importSongMapJson(event)" />
+        </div>
+      </div>
+
+      <!-- Song Sections List -->
+      <div id="songMapSectionsContainer" class="space-y-3">
+        <!-- Dynamically rendered section cards -->
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- METRIC MODULATION CALCULATOR MODAL -->
+  <div id="modulationModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-panel border border-cyan-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-panelBorder pb-3">
+        <div>
+          <h3 class="font-mono text-sm font-bold text-white uppercase tracking-wider">Metric Modulation Calculator</h3>
+          <p class="text-xs text-slate-400">Equate old vs. new note subdivisions or polyrhythmic ratios</p>
+        </div>
+        <button onclick="toggleModulationModal(false)" class="text-slate-400 hover:text-white font-mono text-xl px-2">&times;</button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="bg-obsidian p-3 rounded-xl border border-panelBorder flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-400">Current Tempo:</span>
+          <span id="modSourceBpmLabel" class="font-mono text-base font-bold text-cyan-300">120 BPM</span>
+        </div>
+
+        <!-- Mode Selector: Note Equivalence vs Ratio -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-obsidian/70 p-3 rounded-xl border border-panelBorder">
+            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1.5">Old Note Value</label>
+            <select id="modOldNote" onchange="calculateModulation()" class="w-full bg-panel border border-panelBorder rounded-lg px-2.5 py-2 text-xs font-mono text-white focus:outline-none">
+              <option value="1">Quarter Note (1)</option>
+              <option value="1.5" selected>Dotted Quarter (1.5)</option>
+              <option value="0.5">Eighth Note (0.5)</option>
+              <option value="0.6666667">Quarter Triplet (2/3)</option>
+            </select>
+          </div>
+
+          <div class="bg-obsidian/70 p-3 rounded-xl border border-panelBorder">
+            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1.5">= New Note Value</label>
+            <select id="modNewNote" onchange="calculateModulation()" class="w-full bg-panel border border-panelBorder rounded-lg px-2.5 py-2 text-xs font-mono text-white focus:outline-none">
+              <option value="1" selected>Quarter Note (1)</option>
+              <option value="1.5">Dotted Quarter (1.5)</option>
+              <option value="0.5">Eighth Note (0.5)</option>
+              <option value="0.6666667">Quarter Triplet (2/3)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Quick Polyrhythmic Ratio Overlays -->
+        <div>
+          <span class="block text-[10px] font-mono uppercase text-slate-400 mb-1.5">Or Quick Ratio Pivot:</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="setModRatioPreset(1.5, 1)" class="hw-btn px-2.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-cyan-300">3:2 (x1.5)</button>
+            <button onclick="setModRatioPreset(1, 1.5)" class="hw-btn px-2.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-cyan-300">2:3 (x0.667)</button>
+            <button onclick="setModRatioPreset(4, 3)" class="hw-btn px-2.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-amber-300">4:3 (x1.333)</button>
+            <button onclick="setModRatioPreset(3, 4)" class="hw-btn px-2.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-amber-300">3:4 (x0.75)</button>
+            <button onclick="setModRatioPreset(5, 4)" class="hw-btn px-2.5 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder text-xs font-mono text-pink-300">5:4 (x1.25)</button>
+          </div>
+        </div>
+
+        <!-- Result & Apply -->
+        <div class="bg-obsidian p-4 rounded-xl border border-emerald-500/40 flex items-center justify-between">
+          <div>
+            <div class="text-[10px] font-mono text-slate-400 uppercase">Modulated Target BPM</div>
+            <div id="modTargetBpmResult" class="font-mono text-2xl font-bold text-emerald-300">180 BPM</div>
+          </div>
+          <button onclick="applyModulatedBpm()" class="hw-btn px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-obsidian font-mono text-xs font-bold">
+            Apply BPM
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-panelBorder bg-studio/60 py-3 px-4 mt-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-slate-500 gap-2">
+      <div>time.sarimoko.com &bull; Precision Web Audio Lookahead Engine</div>
+      <div>Shortcuts: <kbd class="px-1.5 py-0.5 bg-panel border border-panelBorder rounded text-slate-300">SPACE</kbd> Play/Stop &bull; <kbd class="px-1.5 py-0.5 bg-panel border border-panelBorder rounded text-slate-300">F</kbd> Trigger Fill</div>
+    </div>
+  </footer>
+
+  <!-- ======================================================================= -->
+  <!-- APPLICATION LOGIC & WEB AUDIO SYNTHESIS ENGINE                          -->
+  <!-- ======================================================================= -->
+  <script>
+    /**
+     * COLOR PALETTE FOR POLYRHYTHM LAYERS
+     */
+    const LAYER_COLORS = [
+      { name: 'Cyan', hex: '#00f0ff', bg: 'rgba(0, 240, 255, 0.15)', border: 'rgba(0, 240, 255, 0.45)' },
+      { name: 'Amber', hex: '#ff9e00', bg: 'rgba(255, 158, 0, 0.15)', border: 'rgba(255, 158, 0, 0.45)' },
+      { name: 'Magenta', hex: '#ff2a85', bg: 'rgba(255, 42, 133, 0.15)', border: 'rgba(255, 42, 133, 0.45)' },
+      { name: 'Emerald', hex: '#00e676', bg: 'rgba(0, 230, 118, 0.15)', border: 'rgba(0, 230, 118, 0.45)' },
+      { name: 'Violet', hex: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.45)' },
+      { name: 'Coral', hex: '#ff5252', bg: 'rgba(255, 82, 82, 0.15)', border: 'rgba(255, 82, 82, 0.45)' }
+    ];
+
+    /**
+     * GLOBAL APPLICATION STATE
+     */
+    const appState = {
+      activeTab: 'metronome', // 'metronome' | 'polyrhythm' | 'drdrum' | 'songmap'
+      isPlaying: false,
+      bpm: 120,
+      masterVolume: 0.85,
+      startTimeAudio: 0,
+      startTimePerf: 0,
+      tapTimes: []
+    };
+
+    const metronomeState = {
+      numerator: 4,
+      denominator: 4,
+      subdivision: 1,
+      subVolume: 0.45,
+      soundPreset: 'woodblock',
+      accents: [3, 2, 2, 2],
+      currentBeat: 0,
+      currentSub: 0,
+      barCount: 1,
+      trainer: {
+        enabled: false,
+        bpmStep: 5,
+        barStep: 4,
+        barsElapsedInCycle: 0
+      }
+    };
+
+    const songMapState = {
+      loop: true,
+      activeSectionIdx: 0,
+      barInSection: 1,
+      nextSectionId: 5,
+      sections: [
+        { id: 1, name: 'Intro',  bars: 4, numerator: 4, denominator: 4, bpm: 120 },
+        { id: 2, name: 'Verse',  bars: 8, numerator: 4, denominator: 4, bpm: 120 },
+        { id: 3, name: 'Bridge', bars: 4, numerator: 7, denominator: 8, bpm: 120 },
+        { id: 4, name: 'Chorus', bars: 8, numerator: 4, denominator: 4, bpm: 128 }
+      ]
+    };
+
+    const polyState = {
+      mode: 'polyrhythm',
+      visLayout: 'both',
+      nextLayerId: 3,
+      layers: [
+        {
+          id: 1,
+          name: 'Voice A',
+          beats: 4,
+          denominator: 4,
+          multiplier: 1,
+          sound: 'kick',
+          volume: 0.85,
+          muted: false,
+          solo: false,
+          colorIdx: 0,
+          accents: [3, 2, 2, 2],
+          nextNoteTime: 0,
+          currentStep: 0,
+          pulseFlash: 0
+        },
+        {
+          id: 2,
+          name: 'Voice B',
+          beats: 3,
+          denominator: 4,
+          multiplier: 1,
+          sound: 'marimba',
+          volume: 0.8,
+          muted: false,
+          solo: false,
+          colorIdx: 1,
+          accents: [3, 2, 2],
+          nextNoteTime: 0,
+          currentStep: 0,
+          pulseFlash: 0
+        }
+      ],
+      ripples: []
+    };
+
+    /**
+     * DR. DRUM METER CONFIGURATIONS & PATTERN BANK
+     */
+    const DR_DRUM_METERS = {
+      '4/4': { label: '4/4', stepsPerBar: 16, groupSize: 4, stepNoteSub: 4 },
+      '3/4': { label: '3/4', stepsPerBar: 12, groupSize: 4, stepNoteSub: 4 },
+      '5/4': { label: '5/4', stepsPerBar: 20, groupSize: 4, stepNoteSub: 4 },
+      '6/8': { label: '6/8', stepsPerBar: 12, groupSize: 3, stepNoteSub: 4 },
+      '7/8': { label: '7/8', stepsPerBar: 14, groupSize: 4, stepNoteSub: 4 }
+    };
+
+    const DR_DRUM_PATTERNS = {
+      kick: {
+        'Four-on-Floor': [3,0,0,0, 2,0,0,0, 3,0,0,0, 2,0,0,0],
+        'Rock Backbeat': [3,0,0,0, 0,0,0,2, 3,0,2,0, 0,0,0,0],
+        'Syncopated':    [3,0,0,2, 0,0,2,0, 0,0,3,0, 0,2,0,0],
+        'Half-Time':     [3,0,0,0, 0,0,0,0, 0,0,2,0, 0,0,0,1],
+        'Bossa Bass':    [3,0,0,2, 2,0,0,2, 3,0,0,2, 2,0,0,2],
+        fill:            [3,0,2,0, 3,0,2,0, 3,2,3,2, 3,3,0,0]
+      },
+      snare: {
+        'Backbeat 2&4':  [0,0,0,0, 3,0,0,0, 0,0,0,0, 3,0,0,0],
+        'Ghost Groove':  [0,0,0,1, 3,0,0,1, 0,1,0,0, 3,0,1,0],
+        'Half-Time':     [0,0,0,0, 0,0,0,0, 3,0,0,0, 0,0,0,1],
+        'Bossa Rim':     [2,0,0,2, 0,0,2,0, 0,0,2,0, 0,2,0,0],
+        'Train Beat':    [1,0,2,0, 3,0,2,0, 1,0,2,0, 3,0,2,1],
+        fill:            [0,0,2,2, 3,1,2,2, 3,2,3,2, 3,3,3,3]
+      },
+      hihat: {
+        '8th Pulse':     [3,0,2,0, 3,0,2,0, 3,0,2,0, 3,0,2,0],
+        '16th Drive':    [3,1,2,1, 3,1,2,1, 3,1,2,1, 3,1,2,1],
+        'Off-Beat':      [0,0,3,0, 0,0,3,0, 0,0,3,0, 0,0,3,0],
+        'Shuffle / Tri': [3,0,0,2, 3,0,0,2, 3,0,0,2, 3,0,0,2],
+        'Sparse':        [2,0,0,0, 2,0,0,0, 2,0,0,0, 2,0,0,0],
+        fill:            [2,2,2,2, 2,2,2,2, 0,0,0,0, 3,0,0,0]
+      },
+      clap: {
+        '2 & 4 Layer':   [0,0,0,0, 3,0,0,0, 0,0,0,0, 3,0,0,0],
+        'Beat 4 Accent': [0,0,0,0, 0,0,0,0, 0,0,0,0, 3,0,0,0],
+        '3-2 Clave':     [3,0,0,3, 0,0,3,0, 0,0,2,0, 2,0,0,0],
+        'Off-Beat Pop':  [0,0,2,0, 0,0,2,0, 0,0,2,0, 0,0,2,0],
+        'Off / Silent':  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+        fill:            [0,0,0,0, 2,0,2,0, 3,0,3,0, 3,3,0,0]
+      },
+      shaker: {
+        '16th Groove':   [3,1,2,1, 3,1,2,1, 3,1,2,1, 3,1,2,1],
+        '8th Light':     [2,0,2,0, 2,0,2,0, 2,0,2,0, 2,0,2,0],
+        'Upbeat Push':   [1,0,3,0, 1,0,3,0, 1,0,3,0, 1,0,3,0],
+        'Latin Salsa':   [3,0,2,2, 3,0,2,2, 3,0,2,2, 3,0,2,2],
+        'Off / Silent':  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+        fill:            [3,2,3,2, 3,2,3,2, 3,3,3,3, 0,0,0,0]
+      }
+    };
+
+    function adaptPatternToMeter(channelId, base16, meterKey, isFill = false) {
+      const targetLen = DR_DRUM_METERS[meterKey].stepsPerBar;
+      if (meterKey === '4/4') return [...base16];
+
+      if (!isFill) {
+        if (meterKey === '6/8') {
+          if (channelId === 'kick' && base16.some(v => v > 0)) return [3,0,0,0,0,0, 2,0,0,0,2,0];
+          if (channelId === 'snare' && base16.some(v => v > 0)) return [0,0,0,0,0,0, 3,0,0,0,0,1];
+          if (channelId === 'hihat' && base16.some(v => v > 0)) return [3,0,2,0,2,0, 3,0,2,0,2,0];
+          if (channelId === 'clap' && base16.some(v => v > 0)) return [0,0,0,0,0,0, 3,0,0,0,0,0];
+          if (channelId === 'shaker' && base16.some(v => v > 0)) return [3,1,2,1,2,1, 3,1,2,1,2,1];
+        }
+        if (meterKey === '7/8') {
+          if (channelId === 'kick' && base16.some(v => v > 0)) return [3,0,0,0, 2,0,0,0, 3,0,0,0,2,0];
+          if (channelId === 'snare' && base16.some(v => v > 0)) return [0,0,0,0, 3,0,0,0, 0,0,3,0,0,0];
+          if (channelId === 'hihat' && base16.some(v => v > 0)) return [3,0,2,0, 3,0,2,0, 3,0,2,0,2,0];
+          if (channelId === 'clap' && base16.some(v => v > 0)) return [0,0,0,0, 0,0,0,0, 3,0,0,0,0,0];
+          if (channelId === 'shaker' && base16.some(v => v > 0)) return [3,1,2,1, 3,1,2,1, 3,1,2,1,2,1];
+        }
+        if (meterKey === '3/4') {
+          if (channelId === 'snare' && base16.some(v => v > 0)) return [0,0,0,0, 3,0,0,1, 2,0,0,0];
+          if (channelId === 'clap' && base16.some(v => v > 0)) return [0,0,0,0, 3,0,0,0, 0,0,0,0];
+        }
+        if (meterKey === '5/4') {
+          if (channelId === 'kick' && base16.some(v => v > 0)) return [3,0,0,0, 0,0,2,0, 0,0,0,0, 3,0,0,0, 0,0,2,0];
+          if (channelId === 'snare' && base16.some(v => v > 0)) return [0,0,0,0, 3,0,0,1, 0,0,0,0, 0,0,0,0, 3,0,0,0];
+          if (channelId === 'clap' && base16.some(v => v > 0)) return [0,0,0,0, 0,0,0,0, 0,0,0,0, 3,0,0,0, 0,0,0,0];
+        }
+      }
+
+      const out = Array.from({ length: targetLen }, (_, i) => base16[i % base16.length]);
+      if (isFill) {
+        const tailStart = Math.max(0, targetLen - 4);
+        for (let i = tailStart; i < targetLen; i++) {
+          if (channelId === 'snare') out[i] = 3;
+          else if (channelId === 'kick') out[i] = (i % 2 === 0) ? 3 : 0;
+          else if (channelId === 'hihat') out[i] = 0;
+        }
+      }
+      return out;
+    }
+
+    const drDrumState = {
+      meter: '4/4',
+      swing: 0,
+      humanize: 0.25,
+      autoFill: false,
+      fillActive: false,
+      fillQueued: false,
+      barInPhrase: 0,
+      currentStep: -1,
+      nextStepTime: 0,
+      stepIndex: 0,
+      channels: [
+        {
+          id: 'kick',
+          name: 'Kick',
+          color: '#00f0ff',
+          variant: 'Rock Backbeat',
+          voice: 'kick_acoustic',
+          voices: [
+            { id: 'kick_acoustic', label: 'Acoustic Punch' },
+            { id: 'kick_808', label: 'Deep 808 Sub' },
+            { id: 'kick_cajon', label: 'Cajón Bass' }
+          ],
+          volume: 0.9,
+          muted: false,
+          solo: false,
+          steps: [...DR_DRUM_PATTERNS.kick['Rock Backbeat']]
+        },
+        {
+          id: 'snare',
+          name: 'Snare / Rim',
+          color: '#ff9e00',
+          variant: 'Backbeat 2&4',
+          voice: 'snare_crisp',
+          voices: [
+            { id: 'snare_crisp', label: 'Crisp Snare' },
+            { id: 'snare_rim', label: 'Cross-Stick Rim' },
+            { id: 'snare_cajon', label: 'Cajón Slap' }
+          ],
+          volume: 0.85,
+          muted: false,
+          solo: false,
+          steps: [...DR_DRUM_PATTERNS.snare['Backbeat 2&4']]
+        },
+        {
+          id: 'hihat',
+          name: 'Hi-Hat',
+          color: '#00e676',
+          variant: '8th Pulse',
+          voice: 'hat_closed',
+          voices: [
+            { id: 'hat_closed', label: 'Tight Closed Hat' },
+            { id: 'hat_open', label: 'Sizzle Open Hat' },
+            { id: 'hat_ride', label: 'Acoustic Ride' }
+          ],
+          volume: 0.75,
+          muted: false,
+          solo: false,
+          steps: [...DR_DRUM_PATTERNS.hihat['8th Pulse']]
+        },
+        {
+          id: 'clap',
+          name: 'Hand Claps',
+          color: '#ff2a85',
+          variant: '2 & 4 Layer',
+          voice: 'clap_studio',
+          voices: [
+            { id: 'clap_studio', label: 'Studio Group Clap' },
+            { id: 'clap_808', label: 'Analog 808 Clap' },
+            { id: 'clap_snap', label: 'Finger Snap' }
+          ],
+          volume: 0.7,
+          muted: false,
+          solo: false,
+          steps: [...DR_DRUM_PATTERNS.clap['2 & 4 Layer']]
+        },
+        {
+          id: 'shaker',
+          name: 'Shaker / Tamb',
+          color: '#a855f7',
+          variant: '16th Groove',
+          voice: 'perc_shaker',
+          voices: [
+            { id: 'perc_shaker', label: 'Egg Shaker' },
+            { id: 'perc_tamb', label: 'Tambourine' },
+            { id: 'perc_cowbell', label: 'Studio Cowbell' }
+          ],
+          volume: 0.65,
+          muted: false,
+          solo: false,
+          steps: [...DR_DRUM_PATTERNS.shaker['16th Groove']]
+        }
+      ]
+    };
+
+    /**
+     * WEB AUDIO API ENGINE (Lookahead Scheduler + Procedural Drum & Click Synthesis)
+     */
+    let audioCtx = null;
+    let masterGainNode = null;
+    let noiseBuffer = null;
+    let schedulerTimer = null;
+    const LOOKAHEAD_MS = 25.0;
+    const SCHEDULE_AHEAD_SEC = 0.1;
+
+    let nextMetroNoteTime = 0.0;
+    let metroStepIndex = 0;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGainNode = audioCtx.createGain();
+        masterGainNode.gain.value = appState.masterVolume;
+        masterGainNode.connect(audioCtx.destination);
+
+        const bufferSize = audioCtx.sampleRate * 1.5;
+        noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function updateMasterVolume(val) {
+      appState.masterVolume = parseFloat(val);
+      if (masterGainNode && audioCtx) {
+        masterGainNode.gain.setTargetAtTime(appState.masterVolume, audioCtx.currentTime, 0.015);
+      }
+    }
+
+    /**
+     * DR. DRUM ACOUSTIC & ELECTRONIC PERCUSSION SYNTHESIZER
+     */
+    function triggerDrDrumVoice(time, voiceId, accentLevel, channelVolume) {
+      if (!audioCtx || accentLevel === 0 || channelVolume <= 0.001) return;
+
+      let vel = accentLevel === 3 ? 1.0 : (accentLevel === 2 ? 0.68 : 0.32);
+      if (drDrumState.humanize > 0) {
+        vel *= (1 - drDrumState.humanize * 0.15 * Math.random());
+      }
+      vel *= channelVolume;
+      if (vel <= 0.005) return;
+
+      if (voiceId === 'kick_acoustic' || voiceId === 'kick_808' || voiceId === 'kick_cajon') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(masterGainNode);
+
+        if (voiceId === 'kick_acoustic') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(145, time);
+          osc.frequency.exponentialRampToValueAtTime(44, time + 0.09);
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vel * 1.15, time + 0.004);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+          osc.start(time);
+          osc.stop(time + 0.17);
+        } else if (voiceId === 'kick_808') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(115, time);
+          osc.frequency.exponentialRampToValueAtTime(34, time + 0.18);
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vel * 1.2, time + 0.006);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.38);
+          osc.start(time);
+          osc.stop(time + 0.4);
+        } else {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(170, time);
+          osc.frequency.exponentialRampToValueAtTime(68, time + 0.07);
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vel * 1.05, time + 0.003);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.13);
+          osc.start(time);
+          osc.stop(time + 0.14);
+        }
+      } else if (voiceId === 'snare_crisp' || voiceId === 'snare_rim' || voiceId === 'snare_cajon') {
+        if (voiceId === 'snare_crisp') {
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = noiseBuffer;
+          const hp = audioCtx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.setValueAtTime(1100, time);
+          const nGain = audioCtx.createGain();
+          nGain.gain.setValueAtTime(0.001, time);
+          nGain.gain.linearRampToValueAtTime(vel * 0.75, time + 0.003);
+          nGain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+          noise.connect(hp);
+          hp.connect(nGain);
+          nGain.connect(masterGainNode);
+          noise.start(time);
+          noise.stop(time + 0.16);
+
+          const osc = audioCtx.createOscillator();
+          const oGain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(210, time);
+          osc.frequency.exponentialRampToValueAtTime(115, time + 0.07);
+          oGain.gain.setValueAtTime(0.001, time);
+          oGain.gain.linearRampToValueAtTime(vel * 0.7, time + 0.002);
+          oGain.gain.exponentialRampToValueAtTime(0.001, time + 0.09);
+          osc.connect(oGain);
+          oGain.connect(masterGainNode);
+          osc.start(time);
+          osc.stop(time + 0.1);
+        } else if (voiceId === 'snare_rim') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(840, time);
+          osc.frequency.exponentialRampToValueAtTime(380, time + 0.035);
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vel * 0.9, time + 0.002);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.045);
+          osc.connect(gain);
+          gain.connect(masterGainNode);
+          osc.start(time);
+          osc.stop(time + 0.05);
+        } else {
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = noiseBuffer;
+          const bp = audioCtx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.setValueAtTime(1850, time);
+          bp.Q.value = 1.8;
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vel * 0.95, time + 0.002);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.085);
+          noise.connect(bp);
+          bp.connect(gain);
+          gain.connect(masterGainNode);
+          noise.start(time);
+          noise.stop(time + 0.09);
+        }
+      } else if (voiceId === 'hat_closed' || voiceId === 'hat_open' || voiceId === 'hat_ride') {
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const hp = audioCtx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(voiceId === 'hat_ride' ? 5200 : 6800, time);
+
+        const decay = voiceId === 'hat_closed' ? 0.045 : (voiceId === 'hat_open' ? 0.24 : 0.32);
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.55, time + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + decay);
+
+        noise.connect(hp);
+        hp.connect(gain);
+        gain.connect(masterGainNode);
+        noise.start(time);
+        noise.stop(time + decay + 0.02);
+      } else if (voiceId === 'clap_studio' || voiceId === 'clap_808' || voiceId === 'clap_snap') {
+        if (voiceId === 'clap_snap') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1950, time);
+          osc.frequency.exponentialRampToValueAtTime(920, time + 0.028);
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vel * 0.7, time + 0.002);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.035);
+          osc.connect(gain);
+          gain.connect(masterGainNode);
+          osc.start(time);
+          osc.stop(time + 0.04);
+        } else {
+          const offsets = [0, 0.009, 0.018, 0.027];
+          offsets.forEach((off, idx) => {
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+            const bp = audioCtx.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(voiceId === 'clap_808' ? 1350 : 1650, time + off);
+            bp.Q.value = voiceId === 'clap_808' ? 2.4 : 1.3;
+
+            const isTail = idx === offsets.length - 1;
+            const dur = isTail ? 0.14 : 0.022;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.001, time + off);
+            gain.gain.linearRampToValueAtTime(vel * (isTail ? 0.75 : 0.55), time + off + 0.002);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + off + dur);
+
+            noise.connect(bp);
+            bp.connect(gain);
+            gain.connect(masterGainNode);
+            noise.start(time + off);
+            noise.stop(time + off + dur + 0.01);
+          });
+        }
+      } else if (voiceId === 'perc_shaker' || voiceId === 'perc_tamb' || voiceId === 'perc_cowbell') {
+        if (voiceId === 'perc_cowbell') {
+          [540, 800].forEach(freq => {
+            const osc = audioCtx.createOscillator();
+            const bp = audioCtx.createBiquadFilter();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, time);
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(720, time);
+            gain.gain.setValueAtTime(0.001, time);
+            gain.gain.linearRampToValueAtTime(vel * 0.35, time + 0.003);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+            osc.connect(bp);
+            bp.connect(gain);
+            gain.connect(masterGainNode);
+            osc.start(time);
+            osc.stop(time + 0.17);
+          });
+        } else {
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = noiseBuffer;
+          const bp = audioCtx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.setValueAtTime(voiceId === 'perc_tamb' ? 7600 : 5400, time);
+          bp.Q.value = voiceId === 'perc_tamb' ? 3.2 : 1.8;
+
+          const attack = voiceId === 'perc_tamb' ? 0.004 : 0.016;
+          const decay = voiceId === 'perc_tamb' ? 0.14 : 0.065;
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vel * 0.65, time + attack);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + decay);
+
+          noise.connect(bp);
+          bp.connect(gain);
+          gain.connect(masterGainNode);
+          noise.start(time);
+          noise.stop(time + decay + 0.01);
+        }
+      }
+    }
+
+    /**
+     * PROCEDURAL CLICK & POLYRHYTHM SYNTHESIZER
+     */
+    function triggerSynthSound(time, preset, accentLevel, isSubdivision = false, layerVolume = 1.0) {
+      if (!audioCtx || accentLevel === 0 || layerVolume <= 0.001) return;
+
+      let vel = 1.0;
+      if (accentLevel === 3) vel = 1.0;
+      else if (accentLevel === 2) vel = 0.65;
+      else if (accentLevel === 1) vel = 0.3;
+
+      if (isSubdivision) vel *= metronomeState.subVolume;
+      vel *= layerVolume;
+      if (vel <= 0.005) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(masterGainNode);
+
+      if (preset === 'woodblock') {
+        const freq = accentLevel === 3 ? 1180 : (isSubdivision ? 680 : 880);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.65, time + 0.045);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.9, time + 0.003);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.055);
+        osc.start(time);
+        osc.stop(time + 0.06);
+      } else if (preset === 'digital') {
+        const freq = accentLevel === 3 ? 1760 : (isSubdivision ? 920 : 1200);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.75, time + 0.001);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+        osc.start(time);
+        osc.stop(time + 0.035);
+      } else if (preset === 'analog') {
+        const freq = accentLevel === 3 ? 880 : (isSubdivision ? 330 : 440);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, time);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.5, time + 0.06);
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2400, time);
+        osc.disconnect();
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.45, time + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
+        osc.start(time);
+        osc.stop(time + 0.075);
+      } else if (preset === 'percussion' || preset === 'kick') {
+        const startFreq = accentLevel === 3 ? 155 : 130;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(startFreq, time);
+        osc.frequency.exponentialRampToValueAtTime(42, time + 0.11);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 1.1, time + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
+        osc.start(time);
+        osc.stop(time + 0.15);
+      } else if (preset === 'rim') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(accentLevel === 3 ? 520 : 420, time);
+        osc.frequency.exponentialRampToValueAtTime(160, time + 0.045);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.85, time + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
+        osc.start(time);
+        osc.stop(time + 0.065);
+      } else if (preset === 'hihat') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(accentLevel === 3 ? 4200 : 3400, time);
+        const hp = audioCtx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(2800, time);
+        osc.disconnect();
+        osc.connect(hp);
+        hp.connect(gain);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.4, time + 0.001);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.032);
+        osc.start(time);
+        osc.stop(time + 0.035);
+      } else if (preset === 'marimba') {
+        const freq = accentLevel === 3 ? 587.33 : 440;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.85, time + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+        osc.start(time);
+        osc.stop(time + 0.17);
+      } else if (preset === 'bell') {
+        const freq = accentLevel === 3 ? 1318.5 : 987.77;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(vel * 0.65, time + 0.003);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.24);
+        osc.start(time);
+        osc.stop(time + 0.25);
+      }
+    }
+
+    /**
+     * MASTER LOOKAHEAD SCHEDULER LOOP
+     */
+    function scheduler() {
+      if (!appState.isPlaying) return;
+
+      if (appState.activeTab === 'metronome' || appState.activeTab === 'songmap') {
+        scheduleMetronomeNotes();
+      } else if (appState.activeTab === 'polyrhythm') {
+        schedulePolyrhythmNotes();
+      } else if (appState.activeTab === 'drdrum') {
+        scheduleDrDrumNotes();
+      }
+
+      schedulerTimer = setTimeout(scheduler, LOOKAHEAD_MS);
+    }
+
+    function scheduleMetronomeNotes() {
+      while (nextMetroNoteTime < audioCtx.currentTime + SCHEDULE_AHEAD_SEC) {
+        const totalSubsPerBar = metronomeState.numerator * metronomeState.subdivision;
+        const posInBar = metroStepIndex % totalSubsPerBar;
+
+        // Handle Bar Progression at start of new bar (when metroStepIndex > 0)
+        if (posInBar === 0 && metroStepIndex > 0) {
+          metronomeState.barCount++;
+          if (appState.activeTab === 'songmap' && songMapState.sections.length > 0) {
+            advanceSongMapBar();
+          } else if (metronomeState.trainer.enabled) {
+            metronomeState.trainer.barsElapsedInCycle++;
+            if (metronomeState.trainer.barsElapsedInCycle >= metronomeState.trainer.barStep) {
+              metronomeState.trainer.barsElapsedInCycle = 0;
+              const newBpm = Math.min(300, appState.bpm + metronomeState.trainer.bpmStep);
+              setBpm(newBpm, true);
+            }
+          }
+        }
+
+        const currentTotalSubs = metronomeState.numerator * metronomeState.subdivision;
+        const curPosInBar = metroStepIndex % currentTotalSubs;
+        const beatIdx = Math.floor(curPosInBar / metronomeState.subdivision);
+        const subIdx = curPosInBar % metronomeState.subdivision;
+        const isMainBeat = (subIdx === 0);
+        const accentVal = metronomeState.accents[beatIdx] ?? 2;
+
+        if (isMainBeat) {
+          triggerSynthSound(nextMetroNoteTime, metronomeState.soundPreset, accentVal, false, 1.0);
+        } else if (accentVal > 0) {
+          triggerSynthSound(nextMetroNoteTime, metronomeState.soundPreset, 2, true, 1.0);
+        }
+
+        const delayMs = Math.max(0, (nextMetroNoteTime - audioCtx.currentTime) * 1000);
+        const capturedBar = metronomeState.barCount;
+        const capturedSecIdx = songMapState.activeSectionIdx;
+        const capturedSecBar = songMapState.barInSection;
+        setTimeout(() => {
+          if (!appState.isPlaying) return;
+          highlightMetronomeBeat(beatIdx, subIdx, capturedBar);
+          if (appState.activeTab === 'songmap') {
+            updateSongMapPlayheadUI(capturedSecIdx, capturedSecBar);
+          }
+        }, delayMs);
+
+        const beatDuration = (60.0 / appState.bpm) * (4.0 / metronomeState.denominator);
+        const subDuration = beatDuration / metronomeState.subdivision;
+        nextMetroNoteTime += subDuration;
+        metroStepIndex++;
+      }
+    }
+
+    function schedulePolyrhythmNotes() {
+      const anySolo = polyState.layers.some(l => l.solo);
+      const masterCycleSec = (60.0 / appState.bpm) * 4.0;
+      const basePulseSec = 60.0 / appState.bpm;
+
+      polyState.layers.forEach(layer => {
+        let stepDurationSec;
+        if (polyState.mode === 'polyrhythm') {
+          stepDurationSec = (masterCycleSec / layer.beats) / layer.multiplier;
+        } else {
+          stepDurationSec = (basePulseSec * (4.0 / layer.denominator)) / layer.multiplier;
+        }
+
+        while (layer.nextNoteTime < audioCtx.currentTime + SCHEDULE_AHEAD_SEC) {
+          const stepIdx = layer.currentStep % layer.beats;
+          const accentVal = layer.accents[stepIdx] ?? 2;
+          const isAudible = anySolo ? layer.solo : !layer.muted;
+
+          if (isAudible && accentVal > 0) {
+            triggerSynthSound(layer.nextNoteTime, layer.sound, accentVal, false, layer.volume);
+          }
+
+          const delayMs = Math.max(0, (layer.nextNoteTime - audioCtx.currentTime) * 1000);
+          const colorHex = LAYER_COLORS[layer.colorIdx].hex;
+          setTimeout(() => {
+            if (!appState.isPlaying) return;
+            layer.pulseFlash = 1.0;
+            if (isAudible && accentVal > 0) {
+              polyState.ripples.push({
+                color: colorHex,
+                radius: 12,
+                alpha: 0.9,
+                isAccent: accentVal === 3
+              });
+            }
+          }, delayMs);
+
+          layer.nextNoteTime += stepDurationSec;
+          layer.currentStep++;
+        }
+      });
+    }
+
+    function scheduleDrDrumNotes() {
+      const meterCfg = DR_DRUM_METERS[drDrumState.meter];
+      const stepsPerBar = meterCfg.stepsPerBar;
+      const sixteenthSec = (60.0 / appState.bpm) / 4.0;
+      const anySolo = drDrumState.channels.some(c => c.solo);
+
+      while (drDrumState.nextStepTime < audioCtx.currentTime + SCHEDULE_AHEAD_SEC) {
+        const stepInBar = drDrumState.stepIndex % stepsPerBar;
+
+        if (stepInBar === 0) {
+          if (drDrumState.stepIndex > 0) {
+            drDrumState.barInPhrase = (drDrumState.barInPhrase + 1) % 4;
+          }
+          if (drDrumState.fillQueued) {
+            drDrumState.fillActive = true;
+            drDrumState.fillQueued = false;
+          } else if (drDrumState.autoFill && drDrumState.barInPhrase === 3) {
+            drDrumState.fillActive = true;
+          } else {
+            drDrumState.fillActive = false;
+          }
+        }
+
+        let timingOffset = 0;
+        if (stepInBar % 2 === 1 && drDrumState.swing > 0) {
+          timingOffset += sixteenthSec * drDrumState.swing;
+        }
+        if (drDrumState.humanize > 0 && stepInBar !== 0) {
+          timingOffset += (Math.random() - 0.5) * 0.012 * drDrumState.humanize;
+        }
+        const scheduledTime = Math.max(audioCtx.currentTime, drDrumState.nextStepTime + timingOffset);
+
+        drDrumState.channels.forEach(ch => {
+          const isAudible = anySolo ? ch.solo : !ch.muted;
+          if (!isAudible) return;
+
+          const activePattern = drDrumState.fillActive
+            ? adaptPatternToMeter(ch.id, DR_DRUM_PATTERNS[ch.id].fill, drDrumState.meter, true)
+            : ch.steps;
+          const accentVal = activePattern[stepInBar] || 0;
+
+          if (accentVal > 0) {
+            triggerDrDrumVoice(scheduledTime, ch.voice, accentVal, ch.volume);
+          }
+        });
+
+        const delayMs = Math.max(0, (scheduledTime - audioCtx.currentTime) * 1000);
+        const capturedBar = drDrumState.barInPhrase + 1;
+        const capturedFill = drDrumState.fillActive;
+        const capturedSteps = stepsPerBar;
+        setTimeout(() => {
+          if (!appState.isPlaying || appState.activeTab !== 'drdrum') return;
+          highlightDrDrumStep(stepInBar, capturedBar, capturedFill, capturedSteps);
+        }, delayMs);
+
+        drDrumState.nextStepTime += sixteenthSec;
+        drDrumState.stepIndex++;
+      }
+    }
+
+    /**
+     * TRANSPORT CONTROLS (Play / Stop / Tap Tempo)
+     */
+    function togglePlay() {
+      initAudio();
+      appState.isPlaying = !appState.isPlaying;
+
+      const btn = document.getElementById('btnPlayStop');
+      const iconPlay = document.getElementById('iconPlay');
+      const iconStop = document.getElementById('iconStop');
+      const lbl = document.getElementById('lblPlayStop');
+
+      if (appState.isPlaying) {
+        const now = audioCtx.currentTime + 0.04;
+        appState.startTimeAudio = now;
+        appState.startTimePerf = performance.now();
+
+        nextMetroNoteTime = now;
+        metroStepIndex = 0;
+        metronomeState.barCount = 1;
+        metronomeState.trainer.barsElapsedInCycle = 0;
+
+        if (appState.activeTab === 'songmap' && songMapState.sections.length > 0) {
+          songMapState.activeSectionIdx = 0;
+          songMapState.barInSection = 1;
+          applySongSectionToClock(songMapState.sections[0]);
+        }
+
+        polyState.layers.forEach(l => {
+          l.nextNoteTime = now;
+          l.currentStep = 0;
+          l.pulseFlash = 0;
+        });
+        polyState.ripples = [];
+
+        drDrumState.nextStepTime = now;
+        drDrumState.stepIndex = 0;
+        drDrumState.barInPhrase = 0;
+        drDrumState.fillActive = false;
+
+        btn.classList.remove('bg-cyan-500', 'hover:bg-cyan-400', 'glow-cyan');
+        btn.classList.add('bg-rose-500', 'hover:bg-rose-400', 'shadow-lg');
+        iconPlay.classList.add('hidden');
+        iconStop.classList.remove('hidden');
+        lbl.textContent = 'STOP';
+
+        scheduler();
+      } else {
+        clearTimeout(schedulerTimer);
+        btn.classList.remove('bg-rose-500', 'hover:bg-rose-400', 'shadow-lg');
+        btn.classList.add('bg-cyan-500', 'hover:bg-cyan-400', 'glow-cyan');
+        iconPlay.classList.remove('hidden');
+        iconStop.classList.add('hidden');
+        lbl.textContent = 'START';
+
+        clearBeatHighlights();
+        clearDrDrumHighlights();
+      }
+    }
+
+    function handleTapTempo() {
+      const now = performance.now();
+      if (appState.tapTimes.length > 0 && now - appState.tapTimes[appState.tapTimes.length - 1] > 2000) {
+        appState.tapTimes = [];
+      }
+      appState.tapTimes.push(now);
+      if (appState.tapTimes.length > 5) appState.tapTimes.shift();
+
+      if (appState.tapTimes.length >= 2) {
+        let intervals = [];
+        for (let i = 1; i < appState.tapTimes.length; i++) {
+          intervals.push(appState.tapTimes[i] - appState.tapTimes[i - 1]);
+        }
+        const avgMs = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        const detectedBpm = Math.round(60000 / avgMs);
+        setBpm(detectedBpm);
+      }
+    }
+
+    /**
+     * TEMPO & METRONOME STATE UPDATES
+     */
+    function setBpm(val, fromTrainer = false) {
+      let bpm = parseInt(val, 10);
+      if (isNaN(bpm)) bpm = 120;
+      bpm = Math.max(20, Math.min(300, bpm));
+      appState.bpm = bpm;
+
+      document.getElementById('bpmInput').value = bpm;
+      document.getElementById('bpmSlider').value = bpm;
+      document.getElementById('polyBpmInput').value = bpm;
+      document.getElementById('drDrumBpmInput').value = bpm;
+      const songMapInput = document.getElementById('songMapBpmInput');
+      if (songMapInput) songMapInput.value = bpm;
+
+      let marking = 'Moderato';
+      if (bpm < 45) marking = 'Grave / Largo';
+      else if (bpm < 66) marking = 'Adagio';
+      else if (bpm < 84) marking = 'Andante';
+      else if (bpm < 112) marking = 'Moderato';
+      else if (bpm < 136) marking = 'Allegro';
+      else if (bpm < 172) marking = 'Vivace';
+      else marking = 'Presto';
+      document.getElementById('tempoMarking').textContent = marking;
+
+      const modSource = document.getElementById('modSourceBpmLabel');
+      if (modSource) {
+        modSource.textContent = `${bpm} BPM`;
+        calculateModulation();
+      }
+    }
+
+    function adjustBpm(delta) {
+      setBpm(appState.bpm + delta);
+    }
+
+    function setTimeSignature(num, den, resetGroupingTag = true) {
+      num = Math.max(1, Math.min(32, num));
+      metronomeState.numerator = num;
+      metronomeState.denominator = den;
+
+      document.getElementById('displayNumerator').textContent = num;
+      document.getElementById('selectDenominator').value = den;
+
+      if (resetGroupingTag) {
+        const tag = document.getElementById('activeGroupingLabel');
+        if (tag) tag.textContent = 'Standard';
+      }
+
+      const newAccents = [];
+      for (let i = 0; i < num; i++) {
+        if (i < metronomeState.accents.length) {
+          newAccents.push(metronomeState.accents[i]);
+        } else {
+          newAccents.push(i === 0 ? 3 : 2);
+        }
+      }
+      metronomeState.accents = newAccents;
+      renderMetronomeBeatGrid();
+    }
+
+    function applyPulseGrouping(num, den, groups, label) {
+      setTimeSignature(num, den, false);
+      const pattern = [];
+      groups.forEach(groupLen => {
+        for (let i = 0; i < groupLen; i++) {
+          pattern.push(i === 0 ? 3 : 2);
+        }
+      });
+      metronomeState.accents = pattern.slice(0, num);
+      const tag = document.getElementById('activeGroupingLabel');
+      if (tag) tag.textContent = label;
+      renderMetronomeBeatGrid();
+    }
+
+    function changeNumerator(delta) {
+      setTimeSignature(metronomeState.numerator + delta, metronomeState.denominator);
+    }
+
+    function setDenominator(den) {
+      setTimeSignature(metronomeState.numerator, den);
+    }
+
+    function setSubdivision(sub) {
+      metronomeState.subdivision = sub;
+      document.querySelectorAll('.sub-btn').forEach(btn => {
+        const bSub = parseInt(btn.dataset.sub, 10);
+        if (bSub === sub) {
+          btn.className = 'sub-btn py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-mono text-xs font-bold';
+        } else {
+          btn.className = 'sub-btn py-1.5 rounded-lg bg-obsidian border border-panelBorder text-slate-400 hover:text-white font-mono text-xs';
+        }
+      });
+      renderSubPulseDots();
+    }
+
+    function cycleBeatAccent(beatIndex) {
+      const curr = metronomeState.accents[beatIndex];
+      metronomeState.accents[beatIndex] = curr === 0 ? 3 : curr - 1;
+      renderMetronomeBeatGrid();
+    }
+
+    function renderSubPulseDots() {
+      const container = document.getElementById('subPulseDots');
+      container.innerHTML = '';
+      for (let i = 0; i < metronomeState.subdivision; i++) {
+        const dot = document.createElement('span');
+        dot.id = `subDot-${i}`;
+        dot.className = 'w-2 h-2 rounded-full bg-slate-700 transition-transform duration-75';
+        container.appendChild(dot);
+      }
+    }
+
+    function renderMetronomeBeatGrid() {
+      const grid = document.getElementById('beatSequencerGrid');
+      grid.innerHTML = '';
+
+      if (metronomeState.numerator <= 4) {
+        grid.className = 'grid grid-cols-2 sm:grid-cols-4 gap-3';
+      } else if (metronomeState.numerator <= 8) {
+        grid.className = 'grid grid-cols-4 sm:grid-cols-8 gap-2.5';
+      } else {
+        grid.className = 'grid grid-cols-4 sm:grid-cols-8 lg:grid-cols-12 gap-2';
+      }
+
+      metronomeState.accents.forEach((level, idx) => {
+        const pad = document.createElement('button');
+        pad.id = `beatPad-${idx}`;
+        pad.onclick = () => cycleBeatAccent(idx);
+
+        let levelLabel = 'NORMAL';
+        let barHeight = 'h-10';
+        let colorClasses = 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300';
+
+        if (level === 3) {
+          levelLabel = 'ACCENT';
+          barHeight = 'h-16';
+          colorClasses = 'border-amber-400/60 bg-amber-500/15 text-amber-300';
+        } else if (level === 1) {
+          levelLabel = 'GHOST';
+          barHeight = 'h-5';
+          colorClasses = 'border-slate-600 bg-slate-800/40 text-slate-400';
+        } else if (level === 0) {
+          levelLabel = 'MUTE';
+          barHeight = 'h-1.5';
+          colorClasses = 'border-rose-500/30 bg-rose-950/20 text-rose-400/70 opacity-60';
+        }
+
+        pad.className = `hw-btn relative rounded-xl border ${colorClasses} p-3 flex flex-col items-center justify-between h-28 transition-all duration-75 select-none`;
+        pad.innerHTML = `
+          <div class="w-full flex items-center justify-between text-[11px] font-mono">
+            <span class="font-bold">${idx + 1}</span>
+            <span class="text-[9px] tracking-wider opacity-80">${levelLabel}</span>
+          </div>
+          <div class="w-full flex items-end justify-center flex-1 py-1">
+            <div class="w-full max-w-[36px] ${barHeight} rounded-md bg-current opacity-75 transition-all"></div>
+          </div>
+        `;
+        grid.appendChild(pad);
+      });
+    }
+
+    function highlightMetronomeBeat(beatIdx, subIdx, barNum) {
+      document.getElementById('barCounterDisplay').textContent = barNum;
+
+      for (let s = 0; s < metronomeState.subdivision; s++) {
+        const dot = document.getElementById(`subDot-${s}`);
+        if (dot) {
+          if (s === subIdx) {
+            dot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 scale-125 shadow-[0_0_8px_#00f0ff]';
+          } else {
+            dot.className = 'w-2 h-2 rounded-full bg-slate-700';
+          }
+        }
+      }
+
+      metronomeState.accents.forEach((level, idx) => {
+        const pad = document.getElementById(`beatPad-${idx}`);
+        if (!pad) return;
+        if (idx === beatIdx) {
+          pad.classList.add('ring-2', 'ring-white', 'scale-[1.03]', 'brightness-125');
+        } else {
+          pad.classList.remove('ring-2', 'ring-white', 'scale-[1.03]', 'brightness-125');
+        }
+      });
+    }
+
+    function clearBeatHighlights() {
+      document.querySelectorAll('[id^="beatPad-"]').forEach(pad => {
+        pad.classList.remove('ring-2', 'ring-white', 'scale-[1.03]', 'brightness-125');
+      });
+      document.querySelectorAll('[id^="subDot-"]').forEach(dot => {
+        dot.className = 'w-2 h-2 rounded-full bg-slate-700';
+      });
+    }
+
+    /**
+     * DR. DRUM GROOVE ENGINE UI & CONTROLS
+     */
+    function setDrDrumMeter(meterKey) {
+      if (!DR_DRUM_METERS[meterKey]) return;
+      drDrumState.meter = meterKey;
+      drDrumState.stepIndex = 0;
+      drDrumState.barInPhrase = 0;
+
+      const meterSelect = document.getElementById('drDrumMeterSelect');
+      if (meterSelect) meterSelect.value = meterKey;
+
+      drDrumState.channels.forEach(ch => {
+        const basePattern = DR_DRUM_PATTERNS[ch.id][ch.variant] || DR_DRUM_PATTERNS[ch.id]['Rock Backbeat'] || ch.steps;
+        ch.steps = adaptPatternToMeter(ch.id, basePattern, meterKey, false);
+      });
+
+      const badge = document.getElementById('drDrumBarBadge');
+      if (badge) badge.textContent = `BAR 1 / 4 • ${meterKey}`;
+      renderDrDrumChannels();
+    }
+
+    function triggerDrDrumFill() {
+      const stepsPerBar = DR_DRUM_METERS[drDrumState.meter].stepsPerBar;
+      if (!appState.isPlaying) {
+        drDrumState.fillActive = !drDrumState.fillActive;
+      } else {
+        const stepInBar = drDrumState.stepIndex % stepsPerBar;
+        if (stepInBar >= stepsPerBar - 4) {
+          drDrumState.fillQueued = true;
+        } else {
+          drDrumState.fillActive = true;
+        }
+      }
+      updateFillButtonUI();
+    }
+
+    function updateFillButtonUI() {
+      const btn = document.getElementById('btnDrDrumFill');
+      const dot = document.getElementById('fillIndicatorDot');
+      if (drDrumState.fillActive || drDrumState.fillQueued) {
+        btn.classList.add('bg-amber-500', 'text-obsidian', 'glow-amber');
+        btn.classList.remove('bg-amber-500/20', 'text-amber-300');
+        dot.classList.add('bg-obsidian', 'animate-ping');
+      } else {
+        btn.classList.remove('bg-amber-500', 'text-obsidian', 'glow-amber');
+        btn.classList.add('bg-amber-500/20', 'text-amber-300');
+        dot.classList.remove('bg-obsidian', 'animate-ping');
+      }
+    }
+
+    function changeDrDrumVariant(channelId, variantName) {
+      const ch = drDrumState.channels.find(c => c.id === channelId);
+      if (!ch || !DR_DRUM_PATTERNS[channelId][variantName]) return;
+      ch.variant = variantName;
+      ch.steps = adaptPatternToMeter(channelId, DR_DRUM_PATTERNS[channelId][variantName], drDrumState.meter, false);
+      renderDrDrumChannels();
+    }
+
+    function toggleDrDrumStep(channelId, stepIdx) {
+      const ch = drDrumState.channels.find(c => c.id === channelId);
+      if (!ch) return;
+      const cur = ch.steps[stepIdx];
+      ch.steps[stepIdx] = cur === 0 ? 2 : (cur === 2 ? 3 : (cur === 3 ? 1 : 0));
+      ch.variant = 'Custom';
+      renderDrDrumChannels();
+    }
+
+    function loadDrDrumPreset(presetKey) {
+      const presets = {
+        default: {
+          meter: '4/4',
+          swing: 0,
+          humanize: 0.25,
+          autoFill: false,
+          kick:   { variant: 'Rock Backbeat', voice: 'kick_acoustic', volume: 0.9 },
+          snare:  { variant: 'Backbeat 2&4',  voice: 'snare_crisp',   volume: 0.85 },
+          hihat:  { variant: '8th Pulse',     voice: 'hat_closed',    volume: 0.75 },
+          clap:   { variant: '2 & 4 Layer',   voice: 'clap_studio',   volume: 0.7 },
+          shaker: { variant: '16th Groove',   voice: 'perc_shaker',   volume: 0.65 }
+        },
+        unplugged: {
+          swing: 0.08,
+          kick:   { variant: 'Syncopated',    voice: 'kick_cajon' },
+          snare:  { variant: 'Bossa Rim',     voice: 'snare_cajon' },
+          hihat:  { variant: 'Sparse',        voice: 'hat_closed' },
+          clap:   { variant: 'Beat 4 Accent', voice: 'clap_snap' },
+          shaker: { variant: '16th Groove',   voice: 'perc_shaker' }
+        },
+        popRock: {
+          swing: 0,
+          kick:   { variant: 'Rock Backbeat', voice: 'kick_acoustic' },
+          snare:  { variant: 'Backbeat 2&4',  voice: 'snare_crisp' },
+          hihat:  { variant: '8th Pulse',     voice: 'hat_closed' },
+          clap:   { variant: '2 & 4 Layer',   voice: 'clap_studio' },
+          shaker: { variant: '8th Light',     voice: 'perc_tamb' }
+        },
+        funk: {
+          swing: 0.14,
+          kick:   { variant: 'Syncopated',    voice: 'kick_acoustic' },
+          snare:  { variant: 'Ghost Groove',  voice: 'snare_crisp' },
+          hihat:  { variant: '16th Drive',    voice: 'hat_closed' },
+          clap:   { variant: 'Off-Beat Pop',  voice: 'clap_808' },
+          shaker: { variant: '16th Groove',   voice: 'perc_shaker' }
+        },
+        bossa: {
+          swing: 0,
+          kick:   { variant: 'Bossa Bass',    voice: 'kick_acoustic' },
+          snare:  { variant: 'Bossa Rim',     voice: 'snare_rim' },
+          hihat:  { variant: '8th Pulse',     voice: 'hat_ride' },
+          clap:   { variant: '3-2 Clave',     voice: 'clap_snap' },
+          shaker: { variant: 'Latin Salsa',   voice: 'perc_shaker' }
+        },
+        halfTime: {
+          swing: 0.28,
+          kick:   { variant: 'Half-Time',     voice: 'kick_808' },
+          snare:  { variant: 'Half-Time',     voice: 'snare_crisp' },
+          hihat:  { variant: 'Shuffle / Tri', voice: 'hat_open' },
+          clap:   { variant: 'Beat 4 Accent', voice: 'clap_studio' },
+          shaker: { variant: 'Upbeat Push',   voice: 'perc_tamb' }
+        }
+      };
+
+      const cfg = presets[presetKey];
+      if (!cfg) return;
+
+      if (cfg.meter) {
+        drDrumState.meter = cfg.meter;
+        const meterSelect = document.getElementById('drDrumMeterSelect');
+        if (meterSelect) meterSelect.value = cfg.meter;
+        const badge = document.getElementById('drDrumBarBadge');
+        if (badge) badge.textContent = `BAR 1 / 4 • ${cfg.meter}`;
+      }
+      if (typeof cfg.humanize === 'number') {
+        drDrumState.humanize = cfg.humanize;
+        const humSlider = document.getElementById('drDrumHumanizeSlider');
+        if (humSlider) humSlider.value = cfg.humanize;
+      }
+      if (typeof cfg.autoFill === 'boolean') {
+        drDrumState.autoFill = cfg.autoFill;
+        const autoFillEl = document.getElementById('drDrumAutoFill');
+        if (autoFillEl) autoFillEl.checked = cfg.autoFill;
+      }
+
+      drDrumState.swing = cfg.swing;
+      document.getElementById('drDrumSwingSlider').value = cfg.swing;
+      document.getElementById('drDrumSwingVal').textContent = Math.round((cfg.swing / 0.45) * 100) + '%';
+
+      drDrumState.channels.forEach(ch => {
+        if (cfg[ch.id]) {
+          ch.variant = cfg[ch.id].variant;
+          ch.voice = cfg[ch.id].voice;
+          if (typeof cfg[ch.id].volume === 'number') ch.volume = cfg[ch.id].volume;
+          if (presetKey === 'default') {
+            ch.muted = false;
+            ch.solo = false;
+          }
+          ch.steps = adaptPatternToMeter(ch.id, DR_DRUM_PATTERNS[ch.id][ch.variant], drDrumState.meter, false);
+        }
+      });
+
+      renderDrDrumChannels();
+    }
+
+    function renderDrDrumChannels() {
+      const container = document.getElementById('drDrumChannelsContainer');
+      container.innerHTML = '';
+
+      const meterCfg = DR_DRUM_METERS[drDrumState.meter];
+      const stepsCount = meterCfg.stepsPerBar;
+      const groupSize = meterCfg.groupSize;
+
+      drDrumState.channels.forEach(ch => {
+        const variantNames = Object.keys(DR_DRUM_PATTERNS[ch.id]).filter(k => k !== 'fill');
+        const variantOptions = [
+          ...variantNames.map(v => `<option value="${v}" ${ch.variant === v ? 'selected' : ''}>${v}</option>`),
+          ch.variant === 'Custom' ? `<option value="Custom" selected>Custom Edit</option>` : ''
+        ].join('');
+
+        const voiceOptions = ch.voices.map(v =>
+          `<option value="${v.id}" ${ch.voice === v.id ? 'selected' : ''}>${v.label}</option>`
+        ).join('');
+
+        const stepsHtml = ch.steps.slice(0, stepsCount).map((val, idx) => {
+          let isGroupStart = idx % groupSize === 0;
+          if (drDrumState.meter === '7/8') {
+            isGroupStart = (idx === 0 || idx === 4 || idx === 8);
+          }
+
+          let bgStyle = 'bg-obsidian border-panelBorder text-slate-600';
+          let inlineStyle = '';
+          if (val === 3) {
+            bgStyle = 'text-obsidian font-bold border-white/60';
+            inlineStyle = `background-color: ${ch.color};`;
+          } else if (val === 2) {
+            bgStyle = 'text-white border-white/25';
+            inlineStyle = `background-color: ${ch.color}55;`;
+          } else if (val === 1) {
+            bgStyle = 'text-slate-300 border-slate-700';
+            inlineStyle = `background-color: ${ch.color}22;`;
+          }
+
+          return `<button id="drStep-${ch.id}-${idx}" onclick="toggleDrDrumStep('${ch.id}', ${idx})" style="${inlineStyle}" class="h-8 rounded border ${bgStyle} ${isGroupStart && idx !== 0 ? 'ml-1.5' : ''} font-mono text-[10px] transition-all flex items-center justify-center" title="Step ${idx + 1}">
+            ${val === 3 ? '▲' : (val === 2 ? '●' : (val === 1 ? '·' : ''))}
+          </button>`;
+        }).join('');
+
+        const row = document.createElement('div');
+        row.className = `bg-obsidian/70 border border-panelBorder rounded-xl p-3 transition-opacity ${ch.muted ? 'opacity-50' : ''}`;
+        row.innerHTML = `
+          <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+            
+            <!-- Left Controls: Name, Mute/Solo, Sound Voice, Pattern Variant, Volume -->
+            <div class="flex flex-wrap items-center gap-2 xl:w-[460px] shrink-0">
+              <div class="flex items-center gap-2 w-28">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${ch.color}; box-shadow: 0 0 8px ${ch.color};"></span>
+                <span class="font-mono text-xs font-bold text-white truncate">${ch.name}</span>
+              </div>
+
+              <!-- M / S -->
+              <div class="flex items-center gap-1">
+                <button onclick="drDrumState.channels.find(c=>c.id==='${ch.id}').muted = !drDrumState.channels.find(c=>c.id==='${ch.id}').muted; renderDrDrumChannels();" class="px-2 py-1 rounded text-[10px] font-mono font-bold border ${ch.muted ? 'bg-rose-500/25 border-rose-500 text-rose-300' : 'bg-panel border-panelBorder text-slate-400 hover:text-white'}">M</button>
+                <button onclick="drDrumState.channels.find(c=>c.id==='${ch.id}').solo = !drDrumState.channels.find(c=>c.id==='${ch.id}').solo; renderDrDrumChannels();" class="px-2 py-1 rounded text-[10px] font-mono font-bold border ${ch.solo ? 'bg-amber-500/25 border-amber-400 text-amber-300' : 'bg-panel border-panelBorder text-slate-400 hover:text-white'}">S</button>
+              </div>
+
+              <!-- Sound Voice Selector -->
+              <select onchange="drDrumState.channels.find(c=>c.id==='${ch.id}').voice = this.value" class="bg-panel border border-panelBorder rounded-lg px-2 py-1 text-[11px] font-mono text-slate-200 focus:outline-none">
+                ${voiceOptions}
+              </select>
+
+              <!-- Pattern Variant Selector -->
+              <select onchange="changeDrDrumVariant('${ch.id}', this.value)" class="bg-panel border border-panelBorder rounded-lg px-2 py-1 text-[11px] font-mono text-cyan-300 focus:outline-none">
+                ${variantOptions}
+              </select>
+
+              <!-- Volume -->
+              <input type="range" min="0" max="1" step="0.05" value="${ch.volume}" oninput="drDrumState.channels.find(c=>c.id==='${ch.id}').volume = parseFloat(this.value)" class="w-16 ml-auto" title="Channel Level" />
+            </div>
+
+            <!-- Right Dynamic Step Grid -->
+            <div class="grid gap-1 flex-1" style="grid-template-columns: repeat(${stepsCount}, minmax(0, 1fr));">
+              ${stepsHtml}
+            </div>
+
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function highlightDrDrumStep(stepIdx, barNum, isFill, totalSteps) {
+      const badge = document.getElementById('drDrumBarBadge');
+      if (badge) {
+        badge.textContent = isFill
+          ? `BAR ${barNum} / 4 • ${drDrumState.meter} • FILL!`
+          : `BAR ${barNum} / 4 • ${drDrumState.meter}`;
+        badge.className = isFill
+          ? 'text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold'
+          : 'text-[11px] font-mono px-2 py-0.5 rounded bg-obsidian border border-panelBorder text-cyan-300';
+      }
+      updateFillButtonUI();
+
+      drDrumState.channels.forEach(ch => {
+        for (let i = 0; i < totalSteps; i++) {
+          const cell = document.getElementById(`drStep-${ch.id}-${i}`);
+          if (!cell) continue;
+          if (i === stepIdx) {
+            cell.classList.add('ring-2', 'ring-white', 'brightness-125', 'scale-105');
+          } else {
+            cell.classList.remove('ring-2', 'ring-white', 'brightness-125', 'scale-105');
+          }
+        }
+      });
+    }
+
+    function clearDrDrumHighlights() {
+      document.querySelectorAll('[id^="drStep-"]').forEach(cell => {
+        cell.classList.remove('ring-2', 'ring-white', 'brightness-125', 'scale-105');
+      });
+      drDrumState.fillActive = false;
+      drDrumState.fillQueued = false;
+      updateFillButtonUI();
+    }
+
+    /**
+     * POLYRHYTHM & POLYMETER LAB MANAGEMENT
+     */
+    function setPolyMode(mode) {
+      polyState.mode = mode;
+      const btnPoly = document.getElementById('btnModePolyrhythm');
+      const btnMeter = document.getElementById('btnModePolymeter');
+      const desc = document.getElementById('polyModeDescription');
+
+      if (mode === 'polyrhythm') {
+        btnPoly.className = 'px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-magentaGlow/20 text-pink-300 border border-pink-500/40 transition-all';
+        btnMeter.className = 'px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-400 hover:text-white transition-all';
+        desc.textContent = 'Polyrhythm Mode: All layers complete 1 cycle simultaneously.';
+      } else {
+        btnMeter.className = 'px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-amberGlow/20 text-amber-300 border border-amber-500/40 transition-all';
+        btnPoly.className = 'px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-400 hover:text-white transition-all';
+        desc.textContent = 'Polymeter Mode: Shared pulse speed; measures wrap independently.';
+      }
+
+      if (appState.isPlaying && audioCtx) {
+        const now = audioCtx.currentTime + 0.03;
+        appState.startTimeAudio = now;
+        polyState.layers.forEach(l => {
+          l.nextNoteTime = now;
+          l.currentStep = 0;
+        });
+      }
+      renderPolyLayers();
+    }
+
+    function setVisLayout(layout) {
+      polyState.visLayout = layout;
+      const orbitWrap = document.getElementById('orbitCanvasWrap');
+      const linearWrap = document.getElementById('linearCanvasWrap');
+
+      ['both', 'orbit', 'linear'].forEach(key => {
+        const btn = document.getElementById(`visBtn${key.charAt(0).toUpperCase() + key.slice(1)}`);
+        btn.className = (key === layout)
+          ? 'px-2 py-1 rounded bg-slate-800 text-white'
+          : 'px-2 py-1 rounded text-slate-400 hover:text-white';
+      });
+
+      if (layout === 'both') {
+        orbitWrap.classList.remove('hidden');
+        linearWrap.classList.remove('hidden');
+      } else if (layout === 'orbit') {
+        orbitWrap.classList.remove('hidden');
+        linearWrap.classList.add('hidden');
+      } else {
+        orbitWrap.classList.add('hidden');
+        linearWrap.classList.remove('hidden');
+      }
+      resizeCanvases();
+    }
+
+    function addPolyLayer(customConfig = null) {
+      if (polyState.layers.length >= 6) return;
+      const usedColors = polyState.layers.map(l => l.colorIdx);
+      let colorIdx = 0;
+      for (let i = 0; i < LAYER_COLORS.length; i++) {
+        if (!usedColors.includes(i)) { colorIdx = i; break; }
+      }
+
+      const beats = customConfig?.beats || 5;
+      const accents = Array.from({ length: beats }, (_, i) => (i === 0 ? 3 : 2));
+      const now = audioCtx ? audioCtx.currentTime + 0.05 : 0;
+
+      polyState.layers.push({
+        id: polyState.nextLayerId++,
+        name: customConfig?.name || `Voice ${String.fromCharCode(64 + polyState.layers.length + 1)}`,
+        beats: beats,
+        denominator: customConfig?.denominator || 4,
+        multiplier: customConfig?.multiplier || 1,
+        sound: customConfig?.sound || 'bell',
+        volume: 0.8,
+        muted: false,
+        solo: false,
+        colorIdx: customConfig?.colorIdx ?? colorIdx,
+        accents: accents,
+        nextNoteTime: now,
+        currentStep: 0,
+        pulseFlash: 0
+      });
+
+      renderPolyLayers();
+    }
+
+    function removePolyLayer(id) {
+      if (polyState.layers.length <= 1) return;
+      polyState.layers = polyState.layers.filter(l => l.id !== id);
+      renderPolyLayers();
+    }
+
+    function updatePolyLayerBeats(id, delta) {
+      const layer = polyState.layers.find(l => l.id === id);
+      if (!layer) return;
+      const newBeats = Math.max(1, Math.min(24, layer.beats + delta));
+      layer.beats = newBeats;
+
+      const updatedAccents = [];
+      for (let i = 0; i < newBeats; i++) {
+        updatedAccents.push(i < layer.accents.length ? layer.accents[i] : (i === 0 ? 3 : 2));
+      }
+      layer.accents = updatedAccents;
+      renderPolyLayers();
+    }
+
+    function toggleLayerStepAccent(layerId, stepIdx) {
+      const layer = polyState.layers.find(l => l.id === layerId);
+      if (!layer) return;
+      const cur = layer.accents[stepIdx];
+      layer.accents[stepIdx] = cur === 3 ? 2 : (cur === 2 ? 0 : 3);
+      renderPolyLayers();
+    }
+
+    function loadPolyPreset(presetKey) {
+      const presets = {
+        'default': [
+          { name: 'Voice A', beats: 4, sound: 'kick', colorIdx: 0, volume: 0.85 },
+          { name: 'Voice B', beats: 3, sound: 'marimba', colorIdx: 1, volume: 0.8 }
+        ],
+        '3:2': [
+          { name: '3-Beat Hemiola', beats: 3, sound: 'marimba', colorIdx: 0 },
+          { name: '2-Beat Pulse', beats: 2, sound: 'kick', colorIdx: 1 }
+        ],
+        '4:3': [
+          { name: '4-Beat Frame', beats: 4, sound: 'kick', colorIdx: 0 },
+          { name: '3-Beat Cross', beats: 3, sound: 'rim', colorIdx: 1 }
+        ],
+        '5:4': [
+          { name: '5-Beat Quintuplet', beats: 5, sound: 'bell', colorIdx: 2 },
+          { name: '4-Beat Anchor', beats: 4, sound: 'kick', colorIdx: 0 }
+        ],
+        '7:4': [
+          { name: '7-Beat Septuplet', beats: 7, sound: 'marimba', colorIdx: 3 },
+          { name: '4-Beat Ground', beats: 4, sound: 'kick', colorIdx: 0 }
+        ],
+        '3:4:5': [
+          { name: '5-Layer High', beats: 5, sound: 'bell', colorIdx: 2 },
+          { name: '4-Layer Mid', beats: 4, sound: 'rim', colorIdx: 0 },
+          { name: '3-Layer Low', beats: 3, sound: 'kick', colorIdx: 1 }
+        ]
+      };
+
+      const chosen = presets[presetKey];
+      if (!chosen) return;
+
+      if (presetKey === 'default') {
+        setPolyMode('polyrhythm');
+      }
+
+      const now = audioCtx ? audioCtx.currentTime + 0.04 : 0;
+      if (audioCtx) appState.startTimeAudio = now;
+
+      polyState.layers = chosen.map((cfg, idx) => ({
+        id: idx + 1,
+        name: cfg.name,
+        beats: cfg.beats,
+        denominator: 4,
+        multiplier: 1,
+        sound: cfg.sound,
+        volume: cfg.volume ?? 0.85,
+        muted: false,
+        solo: false,
+        colorIdx: cfg.colorIdx,
+        accents: Array.from({ length: cfg.beats }, (_, i) => (i === 0 ? 3 : 2)),
+        nextNoteTime: now,
+        currentStep: 0,
+        pulseFlash: 0
+      }));
+      polyState.nextLayerId = polyState.layers.length + 1;
+      renderPolyLayers();
+    }
+
+    function renderPolyLayers() {
+      const container = document.getElementById('polyLayersContainer');
+      container.innerHTML = '';
+
+      const ratioStr = polyState.layers.map(l => l.beats).join(' : ');
+      document.getElementById('ratioReadout').textContent = ratioStr;
+
+      const addBtn = document.getElementById('btnAddLayer');
+      addBtn.disabled = polyState.layers.length >= 6;
+      addBtn.classList.toggle('opacity-40', polyState.layers.length >= 6);
+
+      polyState.layers.forEach(layer => {
+        const color = LAYER_COLORS[layer.colorIdx];
+        const card = document.createElement('div');
+        card.className = 'bg-panel border rounded-xl p-3.5 transition-all';
+        card.style.borderColor = layer.muted ? '#252938' : color.border;
+
+        const stepsHtml = layer.accents.map((acc, idx) => {
+          let bg = 'bg-slate-800 text-slate-500 border-slate-700';
+          if (acc === 3) bg = 'text-obsidian font-bold border-white/50';
+          else if (acc === 2) bg = 'text-white border-white/20';
+
+          const inlineBg = acc === 3 ? `background-color: ${color.hex};` : (acc === 2 ? `background-color: ${color.bg};` : '');
+          return `<button onclick="toggleLayerStepAccent(${layer.id}, ${idx})" style="${inlineBg}" class="h-7 min-w-[26px] px-1.5 rounded border ${bg} font-mono text-[11px] transition-transform active:scale-95" title="Click to toggle Accent / Normal / Mute">${idx + 1}</button>`;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full" style="background-color: ${color.hex}; box-shadow: 0 0 8px ${color.hex};"></span>
+              <input type="text" value="${layer.name}" onchange="polyState.layers.find(l=>l.id===${layer.id}).name = this.value" class="bg-transparent font-mono text-xs font-bold text-white w-28 focus:outline-none focus:border-b border-slate-500" />
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <button onclick="polyState.layers.find(l=>l.id===${layer.id}).muted = !polyState.layers.find(l=>l.id===${layer.id}).muted; renderPolyLayers();" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${layer.muted ? 'bg-rose-500/20 border-rose-500 text-rose-300' : 'bg-obsidian border-panelBorder text-slate-400 hover:text-white'}">M</button>
+              <button onclick="polyState.layers.find(l=>l.id===${layer.id}).solo = !polyState.layers.find(l=>l.id===${layer.id}).solo; renderPolyLayers();" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${layer.solo ? 'bg-amber-500/20 border-amber-400 text-amber-300' : 'bg-obsidian border-panelBorder text-slate-400 hover:text-white'}">S</button>
+              ${polyState.layers.length > 1 ? `<button onclick="removePolyLayer(${layer.id})" class="px-2 py-0.5 rounded text-[10px] font-mono bg-obsidian hover:bg-rose-950 border border-panelBorder text-slate-400 hover:text-rose-400" title="Remove Layer">&times;</button>` : ''}
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-obsidian/70 p-2 rounded-lg border border-panelBorder mb-2.5">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-mono text-slate-500">BEATS:</span>
+              <button onclick="updatePolyLayerBeats(${layer.id}, -1)" class="w-6 h-6 rounded bg-panel hover:bg-slate-700 font-mono text-xs text-white">-</button>
+              <span class="font-mono text-sm font-bold w-6 text-center" style="color: ${color.hex}">${layer.beats}</span>
+              <button onclick="updatePolyLayerBeats(${layer.id}, 1)" class="w-6 h-6 rounded bg-panel hover:bg-slate-700 font-mono text-xs text-white">+</button>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] font-mono text-slate-500">RATE:</span>
+              <select onchange="polyState.layers.find(l=>l.id===${layer.id}).multiplier = parseFloat(this.value)" class="bg-panel border border-panelBorder rounded px-1.5 py-0.5 text-[11px] font-mono text-slate-200 focus:outline-none">
+                <option value="0.5" ${layer.multiplier === 0.5 ? 'selected' : ''}>0.5x</option>
+                <option value="1" ${layer.multiplier === 1 ? 'selected' : ''}>1x</option>
+                <option value="1.5" ${layer.multiplier === 1.5 ? 'selected' : ''}>1.5x</option>
+                <option value="2" ${layer.multiplier === 2 ? 'selected' : ''}>2x</option>
+              </select>
+            </div>
+
+            <select onchange="polyState.layers.find(l=>l.id===${layer.id}).sound = this.value" class="bg-panel border border-panelBorder rounded px-2 py-0.5 text-[11px] font-mono text-slate-200 focus:outline-none">
+              <option value="kick" ${layer.sound === 'kick' ? 'selected' : ''}>Bass Kick</option>
+              <option value="rim" ${layer.sound === 'rim' ? 'selected' : ''}>Rimshot</option>
+              <option value="hihat" ${layer.sound === 'hihat' ? 'selected' : ''}>Hi-Hat</option>
+              <option value="marimba" ${layer.sound === 'marimba' ? 'selected' : ''}>Marimba</option>
+              <option value="bell" ${layer.sound === 'bell' ? 'selected' : ''}>Synth Bell</option>
+            </select>
+
+            <input type="range" min="0" max="1" step="0.05" value="${layer.volume}" oninput="polyState.layers.find(l=>l.id===${layer.id}).volume = parseFloat(this.value)" class="w-16" title="Layer Volume" />
+          </div>
+
+          <div class="flex flex-wrap gap-1">
+            ${stepsHtml}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    /**
+     * METRIC MODULATION CALCULATOR
+     */
+    function toggleModulationModal(forceState = null) {
+      const modal = document.getElementById('modulationModal');
+      const open = forceState !== null ? forceState : modal.classList.contains('hidden');
+      if (open) {
+        modal.classList.remove('hidden');
+        document.getElementById('modSourceBpmLabel').textContent = `${appState.bpm} BPM`;
+        calculateModulation();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function setModRatioPreset(oldVal, newVal) {
+      document.getElementById('modOldNote').value = String(oldVal);
+      document.getElementById('modNewNote').value = String(newVal);
+      const targetBpm = Math.round(appState.bpm * (oldVal / newVal));
+      document.getElementById('modTargetBpmResult').textContent = `${targetBpm} BPM`;
+      document.getElementById('modTargetBpmResult').dataset.bpm = String(targetBpm);
+    }
+
+    function calculateModulation() {
+      const oldVal = parseFloat(document.getElementById('modOldNote').value) || 1;
+      const newVal = parseFloat(document.getElementById('modNewNote').value) || 1;
+      const targetBpm = Math.max(20, Math.min(300, Math.round(appState.bpm * (oldVal / newVal))));
+      const el = document.getElementById('modTargetBpmResult');
+      el.textContent = `${targetBpm} BPM`;
+      el.dataset.bpm = String(targetBpm);
+    }
+
+    function applyModulatedBpm() {
+      const el = document.getElementById('modTargetBpmResult');
+      const target = parseInt(el.dataset.bpm, 10);
+      if (!isNaN(target)) setBpm(target);
+      toggleModulationModal(false);
+    }
+
+    /**
+     * SONG MAP ARRANGEMENT SEQUENCER
+     */
+    function applySongSectionToClock(sec) {
+      if (!sec) return;
+      setBpm(sec.bpm);
+      setTimeSignature(sec.numerator, sec.denominator);
+      updateSongMapPlayheadUI(songMapState.activeSectionIdx, songMapState.barInSection);
+    }
+
+    function advanceSongMapBar() {
+      const curSec = songMapState.sections[songMapState.activeSectionIdx];
+      if (!curSec) return;
+
+      songMapState.barInSection++;
+      if (songMapState.barInSection > curSec.bars) {
+        songMapState.barInSection = 1;
+        songMapState.activeSectionIdx++;
+
+        if (songMapState.activeSectionIdx >= songMapState.sections.length) {
+          if (songMapState.loop) {
+            songMapState.activeSectionIdx = 0;
+          } else {
+            songMapState.activeSectionIdx = 0;
+            togglePlay();
+            return;
+          }
+        }
+        applySongSectionToClock(songMapState.sections[songMapState.activeSectionIdx]);
+      }
+    }
+
+    function updateSongMapPlayheadUI(secIdx, barNum) {
+      const sec = songMapState.sections[secIdx];
+      if (!sec) return;
+      const activeBadge = document.getElementById('songMapActiveBadge');
+      const barBadge = document.getElementById('songMapBarBadge');
+      if (activeBadge) activeBadge.textContent = `${sec.name} (${sec.numerator}/${sec.denominator})`;
+      if (barBadge) barBadge.textContent = `${barNum} / ${sec.bars}`;
+
+      document.querySelectorAll('[id^="songMapCard-"]').forEach((card, idx) => {
+        if (idx === secIdx && appState.isPlaying) {
+          card.classList.add('border-emerald-400', 'bg-emerald-500/10');
+          card.classList.remove('border-panelBorder');
+        } else {
+          card.classList.remove('border-emerald-400', 'bg-emerald-500/10');
+          card.classList.add('border-panelBorder');
+        }
+      });
+    }
+
+    function addSongMapSection() {
+      songMapState.sections.push({
+        id: songMapState.nextSectionId++,
+        name: `Section ${songMapState.sections.length + 1}`,
+        bars: 4,
+        numerator: metronomeState.numerator,
+        denominator: metronomeState.denominator,
+        bpm: appState.bpm
+      });
+      renderSongMapSections();
+    }
+
+    function moveSongMapSection(idx, dir) {
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= songMapState.sections.length) return;
+      const temp = songMapState.sections[idx];
+      songMapState.sections[idx] = songMapState.sections[targetIdx];
+      songMapState.sections[targetIdx] = temp;
+      songMapState.activeSectionIdx = 0;
+      renderSongMapSections();
+    }
+
+    function removeSongMapSection(id) {
+      if (songMapState.sections.length <= 1) return;
+      songMapState.sections = songMapState.sections.filter(s => s.id !== id);
+      songMapState.activeSectionIdx = 0;
+      renderSongMapSections();
+    }
+
+    function renderSongMapSections() {
+      const container = document.getElementById('songMapSectionsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      songMapState.sections.forEach((sec, idx) => {
+        const card = document.createElement('div');
+        card.id = `songMapCard-${idx}`;
+        card.className = 'bg-panel border border-panelBorder rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 transition-all';
+        card.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-obsidian border border-panelBorder flex items-center justify-center font-mono text-xs font-bold text-cyan-300">${idx + 1}</span>
+            <input type="text" value="${sec.name}" onchange="songMapState.sections[${idx}].name = this.value; updateSongMapPlayheadUI(songMapState.activeSectionIdx, songMapState.barInSection);" class="bg-obsidian border border-panelBorder rounded-lg px-2.5 py-1.5 font-mono text-xs font-bold text-white w-36 focus:outline-none focus:border-cyan-400" />
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex items-center gap-1.5 bg-obsidian px-2.5 py-1.5 rounded-lg border border-panelBorder">
+              <span class="text-[10px] font-mono text-slate-400">BARS:</span>
+              <input type="number" min="1" max="64" value="${sec.bars}" onchange="songMapState.sections[${idx}].bars = Math.max(1, parseInt(this.value)||1)" class="w-11 bg-transparent font-mono text-xs font-bold text-center text-white focus:outline-none" />
+            </div>
+
+            <div class="flex items-center gap-1 bg-obsidian px-2.5 py-1.5 rounded-lg border border-panelBorder">
+              <span class="text-[10px] font-mono text-slate-400">METER:</span>
+              <input type="number" min="1" max="32" value="${sec.numerator}" onchange="songMapState.sections[${idx}].numerator = Math.max(1, Math.min(32, parseInt(this.value)||4))" class="w-9 bg-transparent font-mono text-xs font-bold text-center text-cyan-300 focus:outline-none" />
+              <span class="text-slate-500 font-mono">/</span>
+              <select onchange="songMapState.sections[${idx}].denominator = parseInt(this.value)" class="bg-transparent font-mono text-xs font-bold text-amber-300 focus:outline-none">
+                <option value="2" ${sec.denominator === 2 ? 'selected' : ''}>2</option>
+                <option value="4" ${sec.denominator === 4 ? 'selected' : ''}>4</option>
+                <option value="8" ${sec.denominator === 8 ? 'selected' : ''}>8</option>
+                <option value="16" ${sec.denominator === 16 ? 'selected' : ''}>16</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-1.5 bg-obsidian px-2.5 py-1.5 rounded-lg border border-panelBorder">
+              <span class="text-[10px] font-mono text-slate-400">BPM:</span>
+              <input type="number" min="20" max="300" value="${sec.bpm}" onchange="songMapState.sections[${idx}].bpm = Math.max(20, Math.min(300, parseInt(this.value)||120))" class="w-12 bg-transparent font-mono text-xs font-bold text-center text-emerald-300 focus:outline-none" />
+            </div>
+
+            <button onclick="songMapState.activeSectionIdx = ${idx}; songMapState.barInSection = 1; applySongSectionToClock(songMapState.sections[${idx}]);" class="hw-btn px-2.5 py-1.5 rounded-lg bg-obsidian hover:bg-slate-800 border border-panelBorder text-[11px] font-mono text-cyan-300" title="Load this section's BPM & meter">
+              Cue
+            </button>
+
+            <div class="flex items-center gap-1">
+              <button onclick="moveSongMapSection(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="hw-btn px-2 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder font-mono text-xs text-slate-300 disabled:opacity-30" title="Move Up">&uarr;</button>
+              <button onclick="moveSongMapSection(${idx}, 1)" ${idx === songMapState.sections.length - 1 ? 'disabled' : ''} class="hw-btn px-2 py-1 rounded bg-obsidian hover:bg-slate-800 border border-panelBorder font-mono text-xs text-slate-300 disabled:opacity-30" title="Move Down">&darr;</button>
+              ${songMapState.sections.length > 1 ? `<button onclick="removeSongMapSection(${sec.id})" class="hw-btn px-2 py-1 rounded bg-obsidian hover:bg-rose-950 border border-panelBorder font-mono text-xs text-rose-400" title="Delete Section">&times;</button>` : ''}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function exportSongMapJson() {
+      const dataStr = JSON.stringify({ app: 'time.sarimoko.com', sections: songMapState.sections }, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'sarimoko-song-map.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importSongMapJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed.sections) && parsed.sections.length > 0) {
+            songMapState.sections = parsed.sections.map((s, idx) => ({
+              id: idx + 1,
+              name: String(s.name || `Section ${idx + 1}`),
+              bars: Math.max(1, parseInt(s.bars, 10) || 4),
+              numerator: Math.max(1, Math.min(32, parseInt(s.numerator, 10) || 4)),
+              denominator: [2, 4, 8, 16].includes(parseInt(s.denominator, 10)) ? parseInt(s.denominator, 10) : 4,
+              bpm: Math.max(20, Math.min(300, parseInt(s.bpm, 10) || 120))
+            }));
+            songMapState.nextSectionId = songMapState.sections.length + 1;
+            songMapState.activeSectionIdx = 0;
+            songMapState.barInSection = 1;
+            renderSongMapSections();
+            updateSongMapPlayheadUI(0, 1);
+          }
+        } catch (err) {
+          console.error('Invalid Song Map JSON', err);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    /**
+     * TAB NAVIGATION
+     */
+    function switchTab(tab) {
+      appState.activeTab = tab;
+      const views = {
+        metronome: document.getElementById('viewMetronome'),
+        polyrhythm: document.getElementById('viewPolyrhythm'),
+        drdrum: document.getElementById('viewDrDrum'),
+        songmap: document.getElementById('viewSongMap')
+      };
+      const btns = {
+        metronome: document.getElementById('tabBtnMetronome'),
+        polyrhythm: document.getElementById('tabBtnPolyrhythm'),
+        drdrum: document.getElementById('tabBtnDrDrum'),
+        songmap: document.getElementById('tabBtnSongMap')
+      };
+      const activeStyles = {
+        metronome: 'bg-panel text-cyan-300 border border-cyan-500/30 shadow-sm',
+        polyrhythm: 'bg-panel text-pink-300 border border-pink-500/30 shadow-sm',
+        drdrum: 'bg-panel text-amber-300 border border-amber-500/30 shadow-sm',
+        songmap: 'bg-panel text-emerald-300 border border-emerald-500/30 shadow-sm'
+      };
+
+      Object.keys(views).forEach(key => {
+        if (key === tab) {
+          views[key].classList.remove('hidden');
+          btns[key].className = `flex-1 lg:flex-initial px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${activeStyles[key]}`;
+        } else {
+          views[key].classList.add('hidden');
+          btns[key].className = 'flex-1 lg:flex-initial px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white flex items-center justify-center gap-1.5 whitespace-nowrap';
+        }
+      });
+
+      if (tab === 'polyrhythm') resizeCanvases();
+      if (tab === 'songmap' && songMapState.sections.length > 0) {
+        songMapState.activeSectionIdx = 0;
+        songMapState.barInSection = 1;
+        applySongSectionToClock(songMapState.sections[0]);
+      }
+
+      if (appState.isPlaying && audioCtx) {
+        const now = audioCtx.currentTime + 0.04;
+        appState.startTimeAudio = now;
+        nextMetroNoteTime = now;
+        metroStepIndex = 0;
+        polyState.layers.forEach(l => {
+          l.nextNoteTime = now;
+          l.currentStep = 0;
+        });
+        drDrumState.nextStepTime = now;
+        drDrumState.stepIndex = 0;
+        drDrumState.barInPhrase = 0;
+      }
+    }
+
+    /**
+     * 60FPS VISUAL RENDER LOOP
+     */
+    const orbitCanvas = document.getElementById('orbitCanvas');
+    const orbitCtx = orbitCanvas.getContext('2d');
+    const linearCanvas = document.getElementById('linearCanvas');
+    const linearCtx = linearCanvas.getContext('2d');
+
+    function resizeCanvases() {
+      [orbitCanvas, linearCanvas].forEach(canvas => {
+        if (!canvas || canvas.offsetParent === null) return;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      });
+    }
+
+    function renderLoop() {
+      if (appState.isPlaying) {
+        const elapsedSec = Math.floor((performance.now() - appState.startTimePerf) / 1000);
+        const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+        const secs = String(elapsedSec % 60).padStart(2, '0');
+        document.getElementById('timerDisplay').textContent = `${mins}:${secs}`;
+      }
+
+      if (appState.activeTab === 'polyrhythm') {
+        drawOrbitVisualizer();
+        drawLinearGridVisualizer();
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    function drawOrbitVisualizer() {
+      if (orbitCanvas.offsetParent === null) return;
+      const rect = orbitCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = Math.min(w, h) * 0.41;
+
+      orbitCtx.clearRect(0, 0, w, h);
+
+      orbitCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      orbitCtx.lineWidth = 1;
+      [0.4, 0.7, 1.0].forEach(scale => {
+        orbitCtx.beginPath();
+        orbitCtx.arc(cx, cy, maxR * scale, 0, Math.PI * 2);
+        orbitCtx.stroke();
+      });
+
+      orbitCtx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+      orbitCtx.lineWidth = 2;
+      orbitCtx.beginPath();
+      orbitCtx.moveTo(cx, cy - maxR - 14);
+      orbitCtx.lineTo(cx, cy - 12);
+      orbitCtx.stroke();
+
+      const elapsedAudio = (appState.isPlaying && audioCtx)
+        ? Math.max(0, audioCtx.currentTime - appState.startTimeAudio)
+        : 0;
+      const masterCycleSec = (60.0 / appState.bpm) * 4.0;
+      const basePulseSec = 60.0 / appState.bpm;
+
+      for (let i = polyState.ripples.length - 1; i >= 0; i--) {
+        const rip = polyState.ripples[i];
+        orbitCtx.strokeStyle = rip.color;
+        orbitCtx.globalAlpha = rip.alpha;
+        orbitCtx.lineWidth = rip.isAccent ? 2.5 : 1.5;
+        orbitCtx.beginPath();
+        orbitCtx.arc(cx, cy - maxR, rip.radius, 0, Math.PI * 2);
+        orbitCtx.stroke();
+        rip.radius += 1.4;
+        rip.alpha -= 0.03;
+        if (rip.alpha <= 0) polyState.ripples.splice(i, 1);
+      }
+      orbitCtx.globalAlpha = 1.0;
+
+      const layerCount = polyState.layers.length;
+      polyState.layers.forEach((layer, lIdx) => {
+        if (layer.muted) return;
+        const color = LAYER_COLORS[layer.colorIdx].hex;
+        const radius = maxR * (1 - lIdx * (0.55 / Math.max(1, layerCount)));
+
+        let cycleSec = (polyState.mode === 'polyrhythm')
+          ? (masterCycleSec / layer.multiplier)
+          : ((basePulseSec * layer.beats) / layer.multiplier);
+
+        const phase = (elapsedAudio % cycleSec) / cycleSec;
+        const rotationOffset = -phase * Math.PI * 2;
+
+        layer.pulseFlash = Math.max(0, layer.pulseFlash - 0.06);
+
+        orbitCtx.strokeStyle = color;
+        orbitCtx.lineWidth = 1.8 + layer.pulseFlash * 2;
+        orbitCtx.globalAlpha = 0.55 + layer.pulseFlash * 0.45;
+
+        orbitCtx.beginPath();
+        for (let b = 0; b <= layer.beats; b++) {
+          const angle = -Math.PI / 2 + (b / layer.beats) * Math.PI * 2 + rotationOffset;
+          const vx = cx + Math.cos(angle) * radius;
+          const vy = cy + Math.sin(angle) * radius;
+          if (b === 0) orbitCtx.moveTo(vx, vy);
+          else orbitCtx.lineTo(vx, vy);
+        }
+        orbitCtx.stroke();
+
+        for (let b = 0; b < layer.beats; b++) {
+          const acc = layer.accents[b] ?? 2;
+          if (acc === 0) continue;
+          const angle = -Math.PI / 2 + (b / layer.beats) * Math.PI * 2 + rotationOffset;
+          const vx = cx + Math.cos(angle) * radius;
+          const vy = cy + Math.sin(angle) * radius;
+
+          orbitCtx.fillStyle = acc === 3 ? '#ffffff' : color;
+          orbitCtx.beginPath();
+          orbitCtx.arc(vx, vy, acc === 3 ? 5.5 : 4, 0, Math.PI * 2);
+          orbitCtx.fill();
+        }
+        orbitCtx.globalAlpha = 1.0;
+      });
+
+      orbitCtx.fillStyle = '#171a24';
+      orbitCtx.strokeStyle = '#334155';
+      orbitCtx.lineWidth = 2;
+      orbitCtx.beginPath();
+      orbitCtx.arc(cx, cy, 10, 0, Math.PI * 2);
+      orbitCtx.fill();
+      orbitCtx.stroke();
+    }
+
+    function drawLinearGridVisualizer() {
+      if (linearCanvas.offsetParent === null) return;
+      const rect = linearCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      linearCtx.clearRect(0, 0, w, h);
+
+      const padX = 24;
+      const padY = 24;
+      const drawW = w - padX * 2;
+      const drawH = h - padY * 1.5;
+
+      const elapsedAudio = (appState.isPlaying && audioCtx)
+        ? Math.max(0, audioCtx.currentTime - appState.startTimeAudio)
+        : 0;
+      const masterCycleSec = (60.0 / appState.bpm) * 4.0;
+      const masterPhase = (elapsedAudio % masterCycleSec) / masterCycleSec;
+
+      const layers = polyState.layers;
+      const laneH = drawH / Math.max(1, layers.length);
+
+      layers.forEach((layer, idx) => {
+        const y = padY + laneH * idx + laneH / 2;
+        const color = LAYER_COLORS[layer.colorIdx].hex;
+
+        linearCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+        linearCtx.lineWidth = 1;
+        linearCtx.beginPath();
+        linearCtx.moveTo(padX, y);
+        linearCtx.lineTo(padX + drawW, y);
+        linearCtx.stroke();
+
+        const totalMarkers = polyState.mode === 'polyrhythm'
+          ? Math.max(1, Math.round(layer.beats * layer.multiplier))
+          : layer.beats;
+
+        for (let b = 0; b <= totalMarkers; b++) {
+          const x = padX + (b / totalMarkers) * drawW;
+          const acc = layer.accents[b % layer.beats] ?? 2;
+
+          if (b === 0) {
+            linearCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+            linearCtx.beginPath();
+            linearCtx.moveTo(x, padY - 6);
+            linearCtx.lineTo(x, h - 10);
+            linearCtx.stroke();
+          }
+
+          if (acc > 0 || b === totalMarkers) {
+            linearCtx.fillStyle = layer.muted ? '#475569' : color;
+            const r = (b % layer.beats === 0) ? 5 : 3.5;
+            linearCtx.beginPath();
+            linearCtx.arc(x, y, r, 0, Math.PI * 2);
+            linearCtx.fill();
+          }
+        }
+      });
+
+      if (appState.isPlaying) {
+        const playheadX = padX + masterPhase * drawW;
+        linearCtx.strokeStyle = '#00f0ff';
+        linearCtx.lineWidth = 2;
+        linearCtx.beginPath();
+        linearCtx.moveTo(playheadX, padY - 8);
+        linearCtx.lineTo(playheadX, h - 8);
+        linearCtx.stroke();
+      }
+    }
+
+    /**
+     * KEYBOARD SHORTCUTS & INITIALIZATION
+     */
+    window.addEventListener('keydown', (e) => {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === 'KeyF' && appState.activeTab === 'drdrum') {
+        e.preventDefault();
+        triggerDrDrumFill();
+      }
+    });
+
+    window.addEventListener('resize', resizeCanvases);
+
+    window.onload = function () {
+      setBpm(120);
+      renderMetronomeBeatGrid();
+      renderSubPulseDots();
+      renderPolyLayers();
+      renderDrDrumChannels();
+      renderSongMapSections();
+      resizeCanvases();
+      requestAnimationFrame(renderLoop);
+    };
+  </script>
+</body>
+</html>
